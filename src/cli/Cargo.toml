@@ -1,0 +1,25 @@
+[package]
+name = "gigli-cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Command-line interface for GigliOptix"
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "gigli"
+path = "main.rs"
+
+[dependencies]
+gigli-core = { path = "../core" }
+gigli-codegen-llvm = { path = "../codegen/llvm" }
+gigli-codegen-wasm = { path = "../codegen/wasm" }
+gigli-std = { path = "../std" }
+clap.workspace = true
+tokio.workspace = true
+anyhow.workspace = true
+log.workspace = true
+env_logger.workspace = true
+serde.workspace = true
+serde_json.workspace = true

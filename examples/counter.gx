@@ -1,6 +1,15 @@
-// Example: Reactive counter
-view Counter {
-    cell count = 0
-    on click: count += 1
-    render: text("Count: " + count)
+// Example: Counter with reactive UI in GigliOptix
+view App {
+  cell counter = 0
+
+  on click: counter += 1
+
+  style:
+    background: "#000",
+    color: if counter > 10 then "#f00" else "#0f0"
+
+  render:
+    text("Clicks: " + counter)
 }
+
+

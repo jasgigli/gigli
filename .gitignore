@@ -2,67 +2,63 @@
 # Rust
 /target/
 **/*.rs.bk
-**/*.rlib
-**/*.d
-**/*.dSYM/
 Cargo.lock
-Cargo.*.lock
 
-# Binaries
-*.exe
-*.dll
-*.so
-*.dylib
-*.bin
-*.out
-
-# IDEs and editors
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
-*.bak
-*.tmp
-*.kate-swp
-*.sublime-workspace
-*.sublime-project
-.history/
-.vscode-test/
+*~
 
 # OS
 .DS_Store
 Thumbs.db
-ehthumbs.db
-Icon?
-Desktop.ini
 
-# Misc
+# Build artifacts
+/dist/
+/build/
+*.o
+*.so
+*.dll
+*.dylib
+*.exe
+
+# WASM
+/pkg/
+*.wasm
+
+# Logs
 *.log
-*.out
-*.dSYM/
+logs/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Node.js (for web tools)
 node_modules/
-dist/
-build/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Documentation build
+/docs/_build/
+
+# Test coverage
 coverage/
-*.tgz
-*.tar.gz
-*.zip
-*.7z
-*.gz
-*.rar
-
-# Rust/Cargo tools
-/.cargo/
-/.rustup/
-/.rustc_info.json
-/.rustdoc/
-/.clippy.toml
-/.rustfmt.toml
-/.cargo_vcs_info.json
-
-# Byproducts
 *.profraw
-*.profdata
-*.gcda
-*.gcno
-*.gcov
+
+# LLVM
+*.bc
+*.ll
+
+# Backup files
+*.backup
+*.bak

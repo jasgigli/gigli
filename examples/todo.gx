@@ -1,0 +1,66 @@
+// Example: Todo List with reactive UI in GigliOptix
+view TodoApp {
+  cell todos = []
+  cell new_todo = ""
+
+  fn add_todo() {
+    if new_todo != "" {
+      todos.push({
+        id: Date::now(),
+        text: new_todo,
+        completed: false
+      })
+      new_todo = ""
+    }
+  }
+
+  fn toggle_todo(id) {
+    for todo in todos {
+      if todo.id == id {
+        todo.completed = !todo.completed
+      }
+    }
+  }
+
+  fn remove_todo(id) {
+    todos = todos.filter(todo => todo.id != id)
+  }
+
+  style:
+    font_family: "Arial, sans-serif",
+    max_width: "500px",
+    margin: "0 auto",
+    padding: "20px"
+
+  render:
+    div {
+      h1("Todo List")
+
+      div {
+        input(
+          value: new_todo,
+          on_input: new_todo = event.target.value,
+          placeholder: "Add a new todo..."
+        )
+        button(on_click: add_todo)("Add")
+      }
+
+      ul {
+        for todo in todos {
+          li {
+            input(
+              type: "checkbox",
+              checked: todo.completed,
+              on_change: toggle_todo(todo.id)
+            )
+            span(
+              style: if todo.completed then "text-decoration: line-through" else ""
+            )(todo.text)
+            button(on_click: remove_todo(todo.id))("Delete")
+          }
+        }
+      }
+
+      p("Total: " + todos.length + " items")
+    }
+}

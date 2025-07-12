@@ -1,0 +1,14 @@
+[package]
+name = "gigli-codegen-llvm"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "LLVM backend for GigliOptix"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+gigli-core = { path = "../../core" }
+inkwell.workspace = true
+anyhow.workspace = true
+log.workspace = true

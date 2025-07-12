@@ -1,0 +1,22 @@
+[package]
+name = "gigli-lsp"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Language Server Protocol implementation for GigliOptix"
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "gigli-lsp"
+path = "main.rs"
+
+[dependencies]
+gigli-core = { path = "../core" }
+tower-lsp.workspace = true
+tower-lsp-macros.workspace = true
+tokio.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+anyhow.workspace = true

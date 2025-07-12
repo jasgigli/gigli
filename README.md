@@ -12,7 +12,7 @@
 
 ## 🌍 Why GigliOptix?
 
-Today’s developers juggle:
+Today's developers juggle:
 
 * HTML + CSS + JS for UI
 * React/Angular for frontend logic
@@ -30,25 +30,70 @@ Today’s developers juggle:
 
 ---
 
-## 🧬 Core Language Principles
+## 🚀 Quick Start
 
-| Principle                    | Description                                                             |
-| ---------------------------- | ----------------------------------------------------------------------- |
-| **Reactive-by-default**      | All variables are live and propagate changes automatically              |
-| **Visual-logic duality**     | Code is debuggable via live visual graphs or syntax                     |
-| **No runtime bloat**         | Fully compiled binaries, no garbage collection, no framework dependency |
-| **Fault-tolerant by syntax** | Errors handled gracefully with `expect`, `recover`, `fallback`          |
-| **Truly full-stack**         | One syntax for UI, logic, backend, CLI, and events                      |
+### Prerequisites
+
+- Rust 1.70+ ([Install Rust](https://rustup.rs/))
+- LLVM 13+ (for native compilation)
+- Node.js 16+ (for web tools)
+
+### Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/giglioptix/giglioptix.git
+cd giglioptix
+
+# Setup development environment
+.\scripts\setup.ps1
+
+# Build the project
+.\scripts\build.ps1 -Release
+```
+
+### Development
+
+```bash
+# Build specific components
+.\scripts\build.ps1 -Target cli
+.\scripts\build.ps1 -Target wasm
+
+# Run tests
+.\scripts\build.ps1 -Test
+
+# Format and lint
+.\scripts\build.ps1 -Format -Clippy
+
+# Run CLI
+cargo run -p gigli-cli -- --help
+```
 
 ---
 
-## 🚀 Compilation Targets
+## 🏗️ Project Structure
 
-| Target                       | Use Case                                  |
-| ---------------------------- | ----------------------------------------- |
-| **Native Binary (via LLVM)** | High-performance apps, servers, CLI tools |
-| **WebAssembly (WASM)**       | Frontend web apps (replaces JS/HTML/CSS)  |
-| **Bytecode VM (future)**     | Embedded scripting and IoT systems        |
+```
+giglioptix/
+├── src/                    # Source code
+│   ├── core/              # Core language implementation
+│   ├── cli/               # Command-line interface
+│   ├── lsp/               # Language Server Protocol
+│   ├── codegen/           # Code generation backends
+│   │   ├── llvm/          # LLVM backend
+│   │   └── wasm/          # WebAssembly backend
+│   ├── runtime/           # Runtime implementations
+│   │   └── js/            # JavaScript runtime
+│   └── std/               # Standard library
+├── tests/                 # Test files
+├── examples/              # Example programs
+├── web/                   # Web tools and playground
+├── scripts/               # Build and utility scripts
+├── docs/                  # Documentation
+└── Cargo.toml            # Workspace configuration
+```
+
+For detailed structure information, see [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md).
 
 ---
 
@@ -91,7 +136,6 @@ This code defines **UI, state, event logic, and style** in a single unit, all re
 * **Static Type Checker** (planned): Ensures safety at compile time
 * **IR Generation**: Intermediate representation for optimization
 * **Backends**:
-
   * LLVM: native binaries
   * WASM: browser compatibility
   * Bytecode VM (planned)
@@ -119,10 +163,28 @@ This code defines **UI, state, event logic, and style** in a single unit, all re
 
 ---
 
+## 🧪 Testing
+
+```bash
+# Run all tests
+cargo test
+
+# Run specific test suites
+cargo test -p gigli-core
+cargo test --test lexer_tests
+cargo test --test parser_tests
+
+# Run benchmarks
+cargo bench
+```
+
+---
+
 ## 📈 Roadmap
 
 * [x] Syntax spec & lexer
-* [ ] MVP interpreter in JS or Rust
+* [x] Project structure & build system
+* [ ] MVP interpreter in Rust
 * [ ] WASM backend (GigliOptix apps in browser!)
 * [ ] REPL + Visual Debugger
 * [ ] Gigli Playground (web-based editor)
@@ -131,7 +193,24 @@ This code defines **UI, state, event logic, and style** in a single unit, all re
 
 ---
 
-## 🔗 License
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow Rust coding standards
+- Add tests for new features
+- Update documentation
+- Run `.\scripts\build.ps1 -Format -Clippy -Test` before submitting
+
+---
+
+## 📄 License
 
 MIT License (c) 2025 GigliOptix Authors
 

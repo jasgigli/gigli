@@ -1,0 +1,36 @@
+[project]
+name = "giglioptix"
+version = "0.1.0"
+description = "The Future of Unified, Reactive, Ultra-Fast Software Development"
+authors = ["Junaid Ali Shah Gigli Authors"]
+license = "MIT"
+repository = "https://github.com/jasgigli/giglioptix"
+
+[build]
+target = "native"  # native, wasm, or both
+optimization = "release"  # debug, release
+parallel = true
+
+[features]
+llvm = true
+wasm = true
+lsp = true
+cli = true
+
+[paths]
+source = "src"
+tests = "tests"
+examples = "examples"
+docs = "docs"
+web = "web"
+scripts = "scripts"
+
+[development]
+format_on_save = true
+clippy_on_build = true
+test_on_build = false
+
+[web]
+port = 8080
+host = "localhost"
+auto_reload = true

@@ -1,0 +1,16 @@
+[package]
+name = "gigli-std"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Standard library for GigliOptix"
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+gigli-core = { path = "../core" }
+gigli-runtime-js = { path = "../runtime/js" }
+serde.workspace = true
+serde_json.workspace = true
+log.workspace = true
+anyhow.workspace = true

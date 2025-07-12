@@ -1,0 +1,84 @@
+// Example: Weather App with API integration in GigliOptix
+view WeatherApp {
+  cell weather_data = null
+  cell city = "London"
+  cell loading = false
+  cell error = ""
+
+  fn fetch_weather() {
+    loading = true
+    error = ""
+
+    // Simulate API call (in real implementation, this would call a weather API)
+    setTimeout(() => {
+      weather_data = {
+        city: city,
+        temperature: 22,
+        condition: "Sunny",
+        humidity: 65,
+        wind_speed: 12,
+        icon: "☀️"
+      }
+      loading = false
+    }, 1000)
+  }
+
+  fn update_city(new_city) {
+    city = new_city
+    fetch_weather()
+  }
+
+  on_mount: fetch_weather()
+
+  style:
+    font_family: "Arial, sans-serif",
+    max_width: "400px",
+    margin: "0 auto",
+    padding: "20px",
+    background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+    color: "white",
+    border_radius: "15px",
+    text_align: "center"
+
+  render:
+    div {
+      h1("Weather App")
+
+      div {
+        input(
+          value: city,
+          on_input: city = event.target.value,
+          placeholder: "Enter city name...",
+          style: "padding: 10px; border: none; border-radius: 5px; margin-right: 10px; width: 200px"
+        )
+        button(
+          on_click: update_city(city),
+          style: "padding: 10px 20px; background: #4CAF50; color: white; border: none; border-radius: 5px; cursor: pointer"
+        )("Search")
+      }
+
+      if loading {
+        div("Loading weather data...")
+      } else if error != "" {
+        div(style: "color: #ff6b6b")(error)
+      } else if weather_data != null {
+        div {
+          h2(weather_data.city)
+          div(style: "font-size: 48px; margin: 20px 0")(weather_data.icon)
+          div(style: "font-size: 36px; font-weight: bold")(weather_data.temperature + "°C")
+          div(style: "font-size: 24px; margin: 10px 0")(weather_data.condition)
+
+          div(style: "display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px") {
+            div {
+              div("Humidity")
+              div(style: "font-size: 20px; font-weight: bold")(weather_data.humidity + "%")
+            }
+            div {
+              div("Wind Speed")
+              div(style: "font-size: 20px; font-weight: bold")(weather_data.wind_speed + " km/h")
+            }
+          }
+        }
+      }
+    }
+}

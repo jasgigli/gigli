@@ -1,0 +1,57 @@
+[workspace]
+members = [
+    "src/core",
+    "src/cli",
+    "src/lsp",
+    "src/codegen/llvm",
+    "src/codegen/wasm",
+    "src/runtime/js",
+    "src/std"
+]
+
+[workspace]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["GigliOptix Authors"]
+description = "The Future of Unified, Reactive, Ultra-Fast Software Development"
+license = "MIT"
+repository = "https://github.com/giglioptix/giglioptix"
+keywords = ["programming-language", "compiler", "reactive", "wasm", "llvm"]
+categories = ["development-tools", "programming-languages"]
+
+[workspace.dependencies]
+# Core dependencies
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "1.0"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.10"
+
+# Lexer and parsing
+pest = "2.7"
+pest_derive = "2.7"
+
+# LLVM backend
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm14-0"] }
+
+# WASM backend
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+js-sys = "0.3"
+web-sys = { version = "0.3", features = ["console"] }
+
+# LSP support
+tower-lsp = "0.19"
+tower-lsp-macros = "0.19"
+
+# CLI and utilities
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+
+# Development dependencies
+criterion = "0.5"

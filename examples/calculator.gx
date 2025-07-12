@@ -1,0 +1,91 @@
+// Example: Calculator with reactive UI in GigliOptix
+view Calculator {
+  cell display = "0"
+  cell current_number = ""
+  cell operation = ""
+  cell previous_number = 0
+  cell waiting_for_number = true
+
+  fn append_digit(digit) {
+    if waiting_for_number {
+      display = digit
+      waiting_for_number = false
+    } else {
+      display = display + digit
+    }
+    current_number = display
+  }
+
+  fn set_operation(op) {
+    if !waiting_for_number {
+      calculate()
+    }
+    operation = op
+    previous_number = parse_float(current_number)
+    waiting_for_number = true
+  }
+
+  fn calculate() {
+    if operation != "" && !waiting_for_number {
+      let current = parse_float(current_number)
+      let result = match operation {
+        "+" => previous_number + current,
+        "-" => previous_number - current,
+        "*" => previous_number * current,
+        "/" => if current != 0 then previous_number / current else 0,
+        _ => current
+      }
+      display = result.to_string()
+      current_number = display
+      operation = ""
+      waiting_for_number = true
+    }
+  }
+
+  fn clear() {
+    display = "0"
+    current_number = ""
+    operation = ""
+    previous_number = 0
+    waiting_for_number = true
+  }
+
+  style:
+    display: "grid",
+    grid_template_columns: "repeat(4, 1fr)",
+    gap: "5px",
+    max_width: "300px",
+    margin: "0 auto",
+    padding: "20px",
+    background: "#f0f0f0",
+    border_radius: "10px"
+
+  render:
+    div {
+      div(
+        style: "grid-column: 1 / -1; background: white; padding: 10px; text-align: right; font-size: 24px; margin-bottom: 10px; border-radius: 5px"
+      )(display)
+
+      button(on_click: clear, style: "grid-column: 1 / 3; background: #ff6b6b; color: white")("Clear")
+      button(on_click: set_operation("/"), style: "background: #4ecdc4")("/")
+      button(on_click: set_operation("*"), style: "background: #4ecdc4")("*")
+
+      button(on_click: append_digit("7"))("7")
+      button(on_click: append_digit("8"))("8")
+      button(on_click: append_digit("9"))("9")
+      button(on_click: set_operation("-"), style: "background: #4ecdc4")("-")
+
+      button(on_click: append_digit("4"))("4")
+      button(on_click: append_digit("5"))("5")
+      button(on_click: append_digit("6"))("6")
+      button(on_click: set_operation("+"), style: "background: #4ecdc4")("+")
+
+      button(on_click: append_digit("1"))("1")
+      button(on_click: append_digit("2"))("2")
+      button(on_click: append_digit("3"))("3")
+      button(on_click: calculate, style: "grid-row: span 2; background: #45b7d1; color: white")("=")
+
+      button(on_click: append_digit("0"), style: "grid-column: span 2")("0")
+      button(on_click: append_digit("."))(".")
+    }
+}

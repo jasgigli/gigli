@@ -1,4 +1,4 @@
-// Example: Hello, GigliOptix!
-view App {
-    render: text("Hello, GigliOptix!")
+// Example: Hello World for the Web in GigliOptix
+fn main() {
+    dom::set_inner_html("app", "<h1>Hello, Web!</h1>");
 }

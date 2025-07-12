@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GigliOptix Playground</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/theme/monokai.min.css"
+    />
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        color: #333;
+      }
+
+      .header {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(10px);
+        padding: 1rem 2rem;
+        text-align: center;
+        color: white;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .header h1 {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
+
+      .header p {
+        font-size: 1.1rem;
+        opacity: 0.9;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 2rem auto;
+        padding: 0 1rem;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        height: calc(100vh - 200px);
+      }
+
+      .editor-panel {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .panel-header {
+        background: #2c3e50;
+        color: white;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .panel-header h3 {
+        font-size: 1.2rem;
+      }
+
+      .example-selector {
+        display: flex;
+        gap: 0.5rem;
+      }
+
+      .example-btn {
+        background: #34495e;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        transition: background 0.3s;
+      }
+
+      .example-btn:hover {
+        background: #3498db;
+      }
+
+      .example-btn.active {
+        background: #e74c3c;
+      }
+
+      .CodeMirror {
+        height: 100% !important;
+        font-size: 14px;
+      }
+
+      .output-panel {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .output-header {
+        background: #27ae60;
+        color: white;
+        padding: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .run-btn {
+        background: #e74c3c;
+        color: white;
+        border: none;
+        padding: 0.5rem 1.5rem;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        font-weight: bold;
+        transition: background 0.3s;
+      }
+
+      .run-btn:hover {
+        background: #c0392b;
+      }
+
+      .run-btn:disabled {
+        background: #95a5a6;
+        cursor: not-allowed;
+      }
+
+      .output-content {
+        flex: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        background: #f8f9fa;
+      }
+
+      .output-frame {
+        width: 100%;
+        height: 100%;
+        border: none;
+        background: white;
+        border-radius: 5px;
+      }
+
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        font-size: 1.2rem;
+        color: #666;
+      }
+
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin-right: 1rem;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .error {
+        color: #e74c3c;
+        background: #fdf2f2;
+        padding: 1rem;
+        border-radius: 5px;
+        border-left: 4px solid #e74c3c;
+        margin: 1rem 0;
+      }
+
+      .success {
+        color: #27ae60;
+        background: #f0f9f0;
+        padding: 1rem;
+        border-radius: 5px;
+        border-left: 4px solid #27ae60;
+        margin: 1rem 0;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 2rem;
+        color: white;
+        opacity: 0.8;
+      }
+
+      @media (max-width: 768px) {
+        .container {
+          grid-template-columns: 1fr;
+          height: auto;
+        }
+
+        .header h1 {
+          font-size: 2rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="header">
+      <h1>🚀 GigliOptix Playground</h1>
+      <p>The Future of Unified, Reactive, Ultra-Fast Software Development</p>
+    </div>
+
+    <div class="container">
+      <div class="editor-panel">
+        <div class="panel-header">
+          <h3>📝 Code Editor</h3>
+          <div class="example-selector">
+            <button class="example-btn" data-example="hello">Hello</button>
+            <button class="example-btn" data-example="counter">Counter</button>
+            <button class="example-btn" data-example="todo">Todo</button>
+            <button class="example-btn" data-example="calculator">
+              Calculator
+            </button>
+            <button class="example-btn" data-example="weather">Weather</button>
+            <button class="example-btn" data-example="game">Game</button>
+          </div>
+        </div>
+        <textarea id="code-editor"></textarea>
+      </div>
+
+      <div class="output-panel">
+        <div class="output-header">
+          <h3>🎯 Live Output</h3>
+          <button class="run-btn" id="run-btn">▶️ Run Code</button>
+        </div>
+        <div class="output-content" id="output-content">
+          <div class="loading">
+            <div class="spinner"></div>
+            <span>Ready to run your GigliOptix code!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        © 2024 GigliOptix - Write once, run everywhere with reactive programming
+      </p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/codemirror.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.2/mode/javascript/javascript.min.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
