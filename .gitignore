@@ -1,0 +1,68 @@
+
+# Rust
+/target/
+**/*.rs.bk
+**/*.rlib
+**/*.d
+**/*.dSYM/
+Cargo.lock
+Cargo.*.lock
+
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.bin
+*.out
+
+# IDEs and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.bak
+*.tmp
+*.kate-swp
+*.sublime-workspace
+*.sublime-project
+.history/
+.vscode-test/
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+Desktop.ini
+
+# Misc
+*.log
+*.out
+*.dSYM/
+node_modules/
+dist/
+build/
+coverage/
+*.tgz
+*.tar.gz
+*.zip
+*.7z
+*.gz
+*.rar
+
+# Rust/Cargo tools
+/.cargo/
+/.rustup/
+/.rustc_info.json
+/.rustdoc/
+/.clippy.toml
+/.rustfmt.toml
+/.cargo_vcs_info.json
+
+# Byproducts
+*.profraw
+*.profdata
+*.gcda
+*.gcno
+*.gcov

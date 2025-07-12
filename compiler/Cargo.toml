@@ -1,0 +1,11 @@
+[package]
+name = "giglioptix"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+inkwell = "0.2.0"
+llvm-sys = "130"
+tree-sitter = "0.20"
+clap = { version = "4", features = ["derive"] }
+anyhow = "1.0"

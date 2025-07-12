@@ -1,0 +1,6 @@
+// Example: Reactive counter
+view Counter {
+    cell count = 0
+    on click: count += 1
+    render: text("Count: " + count)
+}
