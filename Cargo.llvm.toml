@@ -2,7 +2,7 @@
 members = [
     "src/core",
     "src/cli",
-    # "src/lsp",  # Temporarily removed to unblock browser builds
+    "src/lsp",
     "src/codegen/llvm",
     "src/codegen/wasm",
     "src/runtime/js",
@@ -32,6 +32,9 @@ env_logger = "0.10"
 # Lexer and parsing
 pest = "2.7"
 pest_derive = "2.7"
+
+# LLVM backend - required for native compilation
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm15-0"] }
 
 # WASM backend
 wasm-bindgen = "0.2"

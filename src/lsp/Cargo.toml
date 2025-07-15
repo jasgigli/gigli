@@ -9,7 +9,7 @@ repository.workspace = true
 
 [[bin]]
 name = "gigli-lsp"
-path = "main.rs"
+path = "src/main.rs"
 
 [dependencies]
 gigli-core = { path = "../core" }

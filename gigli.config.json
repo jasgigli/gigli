@@ -1,0 +1,60 @@
+{
+  "name": "giglioptix",
+  "version": "0.1.0",
+  "description": "The Future of Unified, Reactive, Ultra-Fast Software Development",
+  "main": "src/main.gx",
+  "author": "GigliOptix Team",
+  "license": "MIT",
+
+  "compiler": {
+    "target": "wasm",
+    "optimization": "debug",
+    "sourceMaps": true,
+    "minify": false
+  },
+
+  "build": {
+    "output": "dist",
+    "assets": "public",
+    "templates": "templates"
+  },
+
+  "dev": {
+    "port": 3000,
+    "host": "localhost",
+    "open": true,
+    "hotReload": true
+  },
+
+  "lint": {
+    "rules": {
+      "no-unused-vars": "error",
+      "no-console": "warn",
+      "prefer-const": "error"
+    }
+  },
+
+  "format": {
+    "indentSize": 2,
+    "maxLineLength": 80,
+    "semicolons": true
+  },
+
+  "dependencies": {
+    "std": "^0.1.0"
+  },
+
+  "devDependencies": {
+    "@giglioptix/cli": "^0.1.0"
+  },
+
+  "scripts": {
+    "dev": "gigli dev src/main.gx",
+    "build": "gigli build src/main.gx -o dist",
+    "run": "gigli run src/main.gx",
+    "bundle": "gigli bundle src/main.gx -o dist",
+    "fmt": "gigli fmt src/",
+    "lint": "gigli lint src/",
+    "test": "gigli test src/"
+  }
+}

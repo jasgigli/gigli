@@ -17,3 +17,6 @@ serde.workspace = true
 serde_json.workspace = true
 log.workspace = true
 anyhow.workspace = true
+
+[features]
+wee_alloc = []
