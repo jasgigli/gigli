@@ -34,6 +34,9 @@ pub enum IRExpr {
     Await(Box<IRExpr>),
     Option(Box<IRExpr>),
     Result { ok: Box<IRExpr>, err: Box<IRExpr> },
+    List(Vec<IRExpr>), // NEW: List<T>
+    Map(Vec<(IRExpr, IRExpr)>), // NEW: Map<K, V>
+    StdCall { module: String, func: String, args: Vec<IRExpr> }, // NEW: stdlib or external call
     Comprehension { target: String, iter: Box<IRExpr>, filter: Option<Box<IRExpr>>, expr: Box<IRExpr> },
     DomRef(String), // reference to DOM node
     // ... add more as needed ...
@@ -400,105 +403,81 @@ fn lower_expr(e: &Expr) -> IRExpr {
         Expr::NullLiteral => IRExpr::StringLiteral("null".to_string()),
         Expr::UndefinedLiteral => IRExpr::StringLiteral("undefined".to_string()),
         Expr::Identifier(s) => IRExpr::Identifier(s.clone()),
-        Expr::BinaryOp { left, op, right } => IRExpr::StringLiteral(format!("({} {} {})",
-            lower_expr_to_string(left),
-            match op {
-                BinaryOp::Add => "+",
-                BinaryOp::Subtract => "-",
-                BinaryOp::Multiply => "*",
-                BinaryOp::Divide => "/",
-                BinaryOp::Modulo => "%",
-                BinaryOp::Power => "**",
-                BinaryOp::Equal => "==",
-                BinaryOp::NotEqual => "!=",
-                BinaryOp::StrictEqual => "===",
-                BinaryOp::StrictNotEqual => "!==",
-                BinaryOp::LessThan => "<",
-                BinaryOp::LessThanEqual => "<=",
-                BinaryOp::GreaterThan => ">",
-                BinaryOp::GreaterThanEqual => ">=",
-                BinaryOp::And => "&&",
-                BinaryOp::Or => "||",
-                BinaryOp::BitwiseAnd => "&",
-                BinaryOp::BitwiseOr => "|",
-                BinaryOp::BitwiseXor => "^",
-                BinaryOp::LeftShift => "<<",
-                BinaryOp::RightShift => ">>",
-                BinaryOp::UnsignedRightShift => ">>>",
-            },
-            lower_expr_to_string(right)
-        )),
-        Expr::UnaryOp { op, operand } => IRExpr::StringLiteral(format!("{}{}",
-            match op {
-                UnaryOp::Plus => "+",
-                UnaryOp::Minus => "-",
-                UnaryOp::Not => "!",
-                UnaryOp::BitwiseNot => "~",
-                UnaryOp::Increment => "++",
-                UnaryOp::Decrement => "--",
-                UnaryOp::TypeOf => "typeof ",
-                UnaryOp::Void => "void ",
-                UnaryOp::Delete => "delete ",
-            },
-            lower_expr_to_string(operand)
-        )),
-        Expr::Call { func, args } => IRExpr::StringLiteral(format!("{}({})",
-            lower_expr_to_string(func),
-            args.iter().map(|a| lower_expr_to_string(a)).collect::<Vec<_>>().join(", ")
-        )),
-        Expr::MethodCall { object, method, args } => IRExpr::StringLiteral(format!("{}.{}({})",
-            lower_expr_to_string(object),
-            method,
-            args.iter().map(|a| lower_expr_to_string(a)).collect::<Vec<_>>().join(", ")
-        )),
-        Expr::If { condition, then, else_ } => IRExpr::StringLiteral(format!("if({}) {{ {} }} else {{ {} }}",
-            lower_expr_to_string(condition),
-            lower_expr_to_string(then),
-            lower_expr_to_string(else_)
-        )),
-        Expr::Concat { left, right } => IRExpr::StringLiteral(format!("{}+{}",
-            lower_expr_to_string(left),
-            lower_expr_to_string(right)
-        )),
-        Expr::PropertyAccess { object, property } => IRExpr::StringLiteral(format!("{}.{}",
-            lower_expr_to_string(object),
-            property
-        )),
-        Expr::ArrayAccess { array, index } => IRExpr::StringLiteral(format!("{}[{}]",
-            lower_expr_to_string(array),
-            lower_expr_to_string(index)
-        )),
-        Expr::TemplateLiteral { parts } => IRExpr::StringLiteral(format!("`{}`",
-            parts.iter().map(|p| match p {
-                TemplatePart::String(s) => s.clone(),
-                TemplatePart::Expression(expr) => format!("${{{}}}", lower_expr_to_string(expr)),
-            }).collect::<Vec<_>>().join("")
-        )),
-        Expr::ArrowFunction { params, body } => IRExpr::StringLiteral(format!("({}) => {{ {} }}",
-            params.iter().map(|p| p.name.clone()).collect::<Vec<_>>().join(", "),
-            body.iter().map(|s| format!("{:?}", s)).collect::<Vec<_>>().join("; ")
-        )),
-        Expr::New { class, args } => IRExpr::StringLiteral(format!("new {}({})",
-            lower_expr_to_string(class),
-            args.iter().map(|a| lower_expr_to_string(a)).collect::<Vec<_>>().join(", ")
-        )),
-        Expr::TypeAssert { value, type_ } => IRExpr::StringLiteral(format!("{} as {:?}",
-            lower_expr_to_string(value),
-            type_
-        )),
-        Expr::ArrayLiteral(elements) => IRExpr::StringLiteral(format!("[{}]",
-            elements.iter().map(|e| lower_expr_to_string(e)).collect::<Vec<_>>().join(", ")
-        )),
-        Expr::ObjectLiteral(properties) => IRExpr::StringLiteral(format!("{{ {} }}",
-            properties.iter().map(|p| {
-                if p.shorthand {
-                    p.key.clone()
-                } else {
-                    format!("{}: {}", p.key, lower_expr_to_string(&p.value))
+        // Lower List<T> construction: new List(args)
+        Expr::New { class, args } => {
+            if let Expr::Identifier(class_name) = &**class {
+                match class_name.as_str() {
+                    "List" => IRExpr::List(args.iter().map(lower_expr).collect()),
+                    "Map" => {
+                        // Expect args as array of pairs or object literal
+                        if args.len() == 1 {
+                            match &args[0] {
+                                Expr::ArrayLiteral(elements) => {
+                                    let pairs = elements.iter().filter_map(|el| {
+                                        if let Expr::ArrayLiteral(pair) = el {
+                                            if pair.len() == 2 {
+                                                Some((lower_expr(&pair[0]), lower_expr(&pair[1])))
+                                            } else { None }
+                                        } else { None }
+                                    }).collect();
+                                    IRExpr::Map(pairs)
+                                }
+                                Expr::ObjectLiteral(props) => {
+                                    let pairs = props.iter().map(|p| (IRExpr::StringLiteral(p.key.clone()), lower_expr(&p.value))).collect();
+                                    IRExpr::Map(pairs)
+                                }
+                                _ => IRExpr::StdCall { module: "map".to_string(), func: "new".to_string(), args: args.iter().map(lower_expr).collect() },
+                            }
+                        } else {
+                            IRExpr::StdCall { module: "map".to_string(), func: "new".to_string(), args: args.iter().map(lower_expr).collect() }
+                        }
+                    }
+                    _ => IRExpr::StdCall { module: class_name.clone(), func: "new".to_string(), args: args.iter().map(lower_expr).collect() },
                 }
-            }).collect::<Vec<_>>().join(", ")
-        )),
-        Expr::Await(inner) => IRExpr::Await(Box::new(lower_expr(inner))),
+            } else {
+                IRExpr::StdCall { module: "<dynamic>".to_string(), func: "new".to_string(), args: args.iter().map(lower_expr).collect() }
+            }
+        }
+        // Lower method calls on stdlib types
+        Expr::MethodCall { object, method, args } => {
+            // Try to detect stdlib types by identifier
+            match &**object {
+                Expr::Identifier(obj_name) if obj_name == "io" || obj_name == "time" => {
+                    IRExpr::StdCall {
+                        module: obj_name.clone(),
+                        func: method.clone(),
+                        args: args.iter().map(lower_expr).collect(),
+                    }
+                }
+                _ => {
+                    // For List/Map/Option/Result, treat as stdcall with type as module
+                    let module = match &**object {
+                        Expr::Identifier(name) => name.clone(),
+                        _ => "<object>".to_string(),
+                    };
+                    IRExpr::StdCall {
+                        module,
+                        func: method.clone(),
+                        args: std::iter::once(lower_expr(object)).chain(args.iter().map(lower_expr)).collect(),
+                    }
+                }
+            }
+        }
+        // Lower direct stdlib calls (e.g., io::print, time::now)
+        Expr::Call { func, args } => {
+            if let Expr::PropertyAccess { object, property } = &**func {
+                if let Expr::Identifier(obj_name) = &**object {
+                    if obj_name == "io" || obj_name == "time" {
+                        return IRExpr::StdCall {
+                            module: obj_name.clone(),
+                            func: property.clone(),
+                            args: args.iter().map(lower_expr).collect(),
+                        };
+                    }
+                }
+            }
+            IRExpr::StringLiteral(format!("{}({})", lower_expr_to_string(func), args.iter().map(|a| lower_expr_to_string(a)).collect::<Vec<_>>().join(", ")))
+        }
         Expr::Comprehension { target, iter, filter, expr } => IRExpr::Comprehension {
             target: target.clone(),
             iter: Box::new(lower_expr(iter)),
@@ -506,5 +485,85 @@ fn lower_expr(e: &Expr) -> IRExpr {
             expr: Box::new(lower_expr(expr)),
         },
         Expr::CellAccess(_) => IRExpr::StringLiteral("<unsupported: cell access>".to_string()),
+        _ => {
+            // Fallback to previous lowering logic
+            // (copy the rest of the match arms from the original lower_expr)
+            match e {
+                Expr::BinaryOp { left, op, right } => IRExpr::StringLiteral(format!("({} {} {})",
+                    lower_expr_to_string(left),
+                    match op {
+                        BinaryOp::Add => "+",
+                        BinaryOp::Subtract => "-",
+                        BinaryOp::Multiply => "*",
+                        BinaryOp::Divide => "/",
+                        BinaryOp::Modulo => "%",
+                        BinaryOp::Power => "**",
+                        BinaryOp::Equal => "==",
+                        BinaryOp::NotEqual => "!=",
+                        BinaryOp::StrictEqual => "===",
+                        BinaryOp::StrictNotEqual => "!==",
+                        BinaryOp::LessThan => "<",
+                        BinaryOp::LessThanEqual => "<=",
+                        BinaryOp::GreaterThan => ">",
+                        BinaryOp::GreaterThanEqual => ">=",
+                        BinaryOp::And => "&&",
+                        BinaryOp::Or => "||",
+                        BinaryOp::BitwiseAnd => "&",
+                        BinaryOp::BitwiseOr => "|",
+                        BinaryOp::BitwiseXor => "^",
+                        BinaryOp::LeftShift => "<<",
+                        BinaryOp::RightShift => ">>",
+                        BinaryOp::UnsignedRightShift => ">>>",
+                    },
+                    lower_expr_to_string(right)
+                )),
+                Expr::UnaryOp { op, operand } => IRExpr::StringLiteral(format!("{}{}",
+                    match op {
+                        UnaryOp::Plus => "+",
+                        UnaryOp::Minus => "-",
+                        UnaryOp::Not => "!",
+                        UnaryOp::BitwiseNot => "~",
+                        UnaryOp::Increment => "++",
+                        UnaryOp::Decrement => "--",
+                        UnaryOp::TypeOf => "typeof ",
+                        UnaryOp::Void => "void ",
+                        UnaryOp::Delete => "delete ",
+                    },
+                    lower_expr_to_string(operand)
+                )),
+                Expr::If { condition, then, else_ } => IRExpr::StringLiteral(format!("if({}) {{ {} }} else {{ {} }}",
+                    lower_expr_to_string(condition),
+                    lower_expr_to_string(then),
+                    lower_expr_to_string(else_)
+                )),
+                Expr::Concat { left, right } => IRExpr::StringLiteral(format!("{}+{}",
+                    lower_expr_to_string(left),
+                    lower_expr_to_string(right)
+                )),
+                Expr::PropertyAccess { object, property } => IRExpr::StringLiteral(format!("{}.{}",
+                    lower_expr_to_string(object),
+                    property
+                )),
+                Expr::ArrayAccess { array, index } => IRExpr::StringLiteral(format!("{}[{}]",
+                    lower_expr_to_string(array),
+                    lower_expr_to_string(index)
+                )),
+                Expr::TemplateLiteral { parts } => IRExpr::StringLiteral(format!("`{}`",
+                    parts.iter().map(|p| match p {
+                        TemplatePart::String(s) => s.clone(),
+                        TemplatePart::Expression(expr) => format!("${{{}}}", lower_expr_to_string(expr)),
+                    }).collect::<Vec<_>>().join("")
+                )),
+                Expr::ArrowFunction { params, body } => IRExpr::StringLiteral(format!("({}) => {{ {} }}",
+                    params.iter().map(|p| p.name.clone()).collect::<Vec<_>>().join(", "),
+                    body.iter().map(|s| format!("{:?}", s)).collect::<Vec<_>>().join("; ")
+                )),
+                Expr::ArrayLiteral(elements) => IRExpr::List(elements.iter().map(lower_expr).collect()),
+                Expr::ObjectLiteral(properties) => IRExpr::Map(properties.iter().map(|p| (IRExpr::StringLiteral(p.key.clone()), lower_expr(&p.value))).collect()),
+                Expr::Await(inner) => IRExpr::Await(Box::new(lower_expr(inner))),
+                Expr::CellAccess(_) => IRExpr::StringLiteral("<unsupported: cell access>".to_string()),
+                _ => IRExpr::StringLiteral("<unsupported: expr>".to_string()),
+            }
+        }
     }
 }

@@ -584,7 +584,7 @@ impl Parser {
                 let value = self.parse_expression()?;
                 self.expect(Token::Semicolon)?;
 
-                Ok(Stmt::Let { name, value, type_annotation })
+                Ok(Stmt::LetVarDecl(LetVar { name, type_annotation, value }))
             }
             Some(Token::Mut) => {
                 self.advance();
@@ -600,7 +600,7 @@ impl Parser {
                 let value = self.parse_expression()?;
                 self.expect(Token::Semicolon)?;
 
-                Ok(Stmt::Mut { name, value, type_annotation })
+                Ok(Stmt::LetVarDecl(LetVar { name, type_annotation, value }))
             }
             Some(Token::Return) => {
                 self.advance();
@@ -875,85 +875,4 @@ impl Parser {
             None
         }
     }
-}
-
-pub fn parse_file(path: &str) -> AST {
-    // For now, return a simple AST for testing
-    AST {
-        functions: vec![],
-        views: vec![],
-        cells: vec![],
-        flows: vec![],
-        classes: vec![],
-        modules: vec![],
-        imports: vec![],
-    }
-}
-
-// Legacy parser for backward compatibility
-fn parse_file_legacy(path: &str) -> AST {
-    // Simple legacy parser that creates a basic AST
-    let mut functions = Vec::new();
-    let mut views = Vec::new();
-    let mut cells = Vec::new();
-    let mut flows = Vec::new();
-
-    // Parse the file content
-    if let Ok(content) = std::fs::read_to_string(path) {
-        for line in content.lines() {
-            let line = line.trim();
-            if line.starts_with("fn ") {
-                functions.push(parse_function_legacy(line));
-            } else if line.starts_with("view ") {
-                views.push(parse_view_legacy(line));
-            }
-        }
-    }
-
-    AST {
-        functions,
-        views,
-        cells,
-        flows,
-        classes: vec![],
-        modules: vec![],
-        imports: vec![],
-    }
-}
-
-fn parse_function_legacy(line: &str) -> Function {
-    let parts: Vec<&str> = line.split_whitespace().collect();
-    let name = parts.get(1).unwrap_or(&"main").to_string();
-
-    Function {
-        name,
-        params: vec![],
-        return_type: None,
-        body: vec![Stmt::Expr(Expr::StringLiteral("Hello, World!".to_string()))],
-        is_public: true,
-        is_async: false,
-    }
-}
-
-fn parse_view_legacy(line: &str) -> View {
-    let parts: Vec<&str> = line.split_whitespace().collect();
-    let name = parts.get(1).unwrap_or(&"App").to_string();
-
-    View {
-        name,
-        props: vec![],
-        cells: vec![],
-        flows: vec![],
-        style: None,
-        render: RenderBlock { elements: vec![] },
-        event_handlers: vec![],
-    }
-}
-
-fn parse_stmt(line: &str) -> Stmt {
-    Stmt::Expr(parse_expr(line))
-}
-
-fn parse_expr(token: &str) -> Expr {
-    Expr::StringLiteral(token.to_string())
 }

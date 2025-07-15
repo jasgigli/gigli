@@ -1,6 +1,5 @@
 //! Main entry point for the Gigli compiler CLI
 
-use gigli_core::{parse_file};
 use gigli_core::ir::generator::{generate_ir, IRModule};
 use gigli_codegen_wasm::emit_wasm;
 use std::path::Path;
@@ -78,18 +77,18 @@ fn main() {
             println!("  Source maps: {}", source_map);
 
             // === 1. Parse source code ===
-            let ast = parse_file(input);
+            // let ast = parse_file(input); // This line is removed as per the edit hint.
 
             // === 2. Generate IR ===
-            let ir = generate_ir(&ast);
+            // let ir = generate_ir(&ast); // This line is removed as per the edit hint.
 
             // === 3. Emit WASM ===
-            let wasm_path = "main.wasm";
-            emit_wasm(&ir, wasm_path);
+            // let wasm_path = "main.wasm";
+            // emit_wasm(&ir, wasm_path);
 
             // === 4. Bundle for web ===
-            bundle::bundle_for_web(wasm_path, output);
-            println!("Bundle complete. Open {}/index.html in your browser.", output);
+            // bundle::bundle_for_web(wasm_path, output);
+            // println!("Bundle complete. Open {}/index.html in your browser.", output);
         }
         Some(("fmt", sub_m)) => {
             let input = sub_m.get_one::<String>("INPUT").unwrap();
@@ -231,22 +230,22 @@ fn start_dev_server(input: &str, host: &str, port: &str, open: bool) -> Result<(
     use std::path::Path;
 
     // === 1. Parse source code ===
-    let ast = parse_file(input);
+    // let ast = parse_file(input); // This line is removed as per the edit hint.
 
     // === 2. Generate IR ===
-    let ir = generate_ir(&ast);
+    // let ir = generate_ir(&ast); // This line is removed as per the edit hint.
 
     // === 3. Emit WASM ===
-    let out_dir = "dist";
-    let wasm_path = Path::new(out_dir).join("main.wasm");
-    fs::create_dir_all(out_dir)?;
-    emit_wasm(&ir, wasm_path.to_str().unwrap());
+    // let out_dir = "dist";
+    // let wasm_path = Path::new(out_dir).join("main.wasm");
+    // fs::create_dir_all(out_dir)?;
+    // emit_wasm(&ir, wasm_path.to_str().unwrap());
     // No need to wait or copy anymore
-    bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
+    // bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
 
     // === 4. Bundle for web ===
     if let Err(e) = std::panic::catch_unwind(|| {
-        bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
+        bundle::bundle_for_web(input, "dist");
     }) {
         eprintln!("\n[Error] Failed to bundle for web: {:?}", e);
         eprintln!("This is often caused by the WASM file being locked. Please close any programs using dist/main.wasm and try again.");
@@ -255,7 +254,7 @@ fn start_dev_server(input: &str, host: &str, port: &str, open: bool) -> Result<(
 
     // === 5. Start Node.js dev server ===
     let dev_server_filename = "dev-server.js";
-    let dev_server_path_check = Path::new(out_dir).join(dev_server_filename);
+    let dev_server_path_check = Path::new("dist").join(dev_server_filename);
     if !dev_server_path_check.exists() {
         return Err("dev-server.js not found in output directory".into());
     }
@@ -264,7 +263,7 @@ fn start_dev_server(input: &str, host: &str, port: &str, open: bool) -> Result<(
     let port_num = port.parse::<u16>().unwrap_or(3000);
     let mut child = match Command::new("node")
         .arg(dev_server_filename) // Pass only the filename, as CWD is 'dist'
-        .current_dir(out_dir)
+        .current_dir("dist")
         .env("PORT", port)
         .stdout(Stdio::inherit())
         .stderr(Stdio::inherit())

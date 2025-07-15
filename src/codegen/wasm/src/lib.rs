@@ -85,12 +85,16 @@ fn create_type_section() -> Vec<u8> {
     // - (i32, i32) -> i32 for DOM operations
     // - () -> () for main function
     // - (i32) -> () for event handlers
+    // - (i32, i32) -> () for io.print (pointer, length)
+    // - () -> i32 for time.now
     let content = vec![
-        0x0b, // section size
-        0x03, // num types
-        0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // (i32, i32) -> i32
-        0x60, 0x00, 0x00, // () -> ()
-        0x60, 0x01, 0x7f, 0x00, // (i32) -> ()
+        0x13, // section size (19 bytes)
+        0x05, // num types
+        0x60, 0x02, 0x7f, 0x7f, 0x01, 0x7f, // 0: (i32, i32) -> i32 (DOM)
+        0x60, 0x00, 0x00,                   // 1: () -> () (main)
+        0x60, 0x01, 0x7f, 0x00,             // 2: (i32) -> () (event handler)
+        0x60, 0x02, 0x7f, 0x7f, 0x00,       // 3: (i32, i32) -> () (io.print)
+        0x60, 0x00, 0x01, 0x7f,             // 4: () -> i32 (time.now)
     ];
     section.extend_from_slice(&content);
     section
@@ -100,10 +104,10 @@ fn create_import_section() -> Vec<u8> {
     let mut section = Vec::new();
     section.push(0x02); // import section
 
-    // Import DOM functions from JavaScript
+    // Import DOM functions from JavaScript, plus io.print and time.now
     let content = vec![
-        0x2a, // section size
-        0x03, // num imports
+        0x4b, // section size (75 bytes)
+        0x05, // num imports
         // import "dom" "set_inner_html"
         0x03, 0x64, 0x6f, 0x6d, // "dom"
         0x0d, 0x73, 0x65, 0x74, 0x5f, 0x69, 0x6e, 0x6e, 0x65, 0x72, 0x5f, 0x68, 0x74, 0x6d, 0x6c, // "set_inner_html"
@@ -116,6 +120,14 @@ fn create_import_section() -> Vec<u8> {
         0x03, 0x64, 0x6f, 0x6d, // "dom"
         0x0f, 0x67, 0x65, 0x74, 0x5f, 0x65, 0x6c, 0x65, 0x6d, 0x65, 0x6e, 0x74, 0x5f, 0x62, 0x79, 0x5f, 0x69, 0x64, // "get_element_by_id"
         0x00, 0x01, // type index 1: (i32) -> i32
+        // import "io" "print"
+        0x02, 0x69, 0x6f, // "io"
+        0x05, 0x70, 0x72, 0x69, 0x6e, 0x74, // "print"
+        0x00, 0x03, // type index 3: (i32, i32) -> ()
+        // import "time" "now"
+        0x04, 0x74, 0x69, 0x6d, 0x65, // "time"
+        0x03, 0x6e, 0x6f, 0x77, // "now"
+        0x00, 0x04, // type index 4: () -> i32
     ];
     section.extend_from_slice(&content);
     section
@@ -382,6 +394,37 @@ fn generate_expression(expr: &gigli_core::ir::IRExpr, body: &mut Vec<u8>) {
             generate_expression(ok, body);
             generate_expression(err, body);
             // Result handling (placeholder)
+        },
+        gigli_core::ir::IRExpr::List(elements) => {
+            // Placeholder: just evaluate all elements and drop
+            for el in elements { generate_expression(el, body); body.push(0x1a); /* drop */ }
+            // In real WASM, would allocate and store array
+        },
+        gigli_core::ir::IRExpr::Map(pairs) => {
+            // Placeholder: evaluate all key-value pairs and drop
+            for (k, v) in pairs { generate_expression(k, body); generate_expression(v, body); body.push(0x1a); /* drop */ }
+            // In real WASM, would allocate and store map
+        },
+        gigli_core::ir::IRExpr::StdCall { module, func, args } => {
+            // WASM import indices:
+            // 0: dom.set_inner_html
+            // 1: dom.add_event_listener
+            // 2: dom.get_element_by_id
+            // 3: io.print
+            // 4: time.now
+            if module == "io" && func == "print" {
+                // Assume args: (ptr, len)
+                for arg in args { generate_expression(arg, body); }
+                body.push(0x10); // call
+                body.extend_from_slice(&encode_leb128(3, &mut Vec::new())); // import index 3
+            } else if module == "time" && func == "now" {
+                body.push(0x10); // call
+                body.extend_from_slice(&encode_leb128(4, &mut Vec::new())); // import index 4
+            } else {
+                // Placeholder: evaluate all args and drop
+                for arg in args { generate_expression(arg, body); }
+                body.push(0x1a); // drop
+            }
         },
         gigli_core::ir::IRExpr::Comprehension { target, iter, filter, expr } => {
             generate_expression(iter, body);

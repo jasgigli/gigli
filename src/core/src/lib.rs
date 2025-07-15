@@ -18,5 +18,5 @@ pub use ast::*;
 pub use ir::*;
 
 // Re-export commonly used functions
-pub use parser::parse_file;
+// pub use parser::parse_file;
 pub use ir::generator::generate_ir;

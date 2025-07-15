@@ -119,6 +119,10 @@ impl SemanticAnalyzer {
         }
     }
 
+    fn check_function(&mut self, _func: &Function) {
+        // TODO: Implement function semantic checks
+    }
+
     fn check_stmt(&mut self, stmt: &Stmt, vars: &mut HashMap<String, Option<Type>>, in_async: bool) {
         match stmt {
             Stmt::Expr(expr) => { self.check_expr(expr, vars, in_async); },

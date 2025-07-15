@@ -90,7 +90,7 @@ pub struct Import {
 }
 
 /// AST node for a function
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Function {
     pub name: String,
     pub params: Vec<Parameter>,
