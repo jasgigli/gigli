@@ -1,6 +1,6 @@
 [project]
 name = "gigli"
-version = "0.2.0"
+version = "0.2.1"
 description = "The Future of Unified, Reactive, Ultra-Fast Software Development"
 authors = ["Junaid Ali Shah Gigli Authors"]
 license = "MIT"

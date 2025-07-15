@@ -1,6 +1,6 @@
 {
   "name": "gigli",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "A next-generation, unified programming language and toolchain for building ultra-fast, reactive, and maintainable software.",
   "bin": {
     "gigli": "./bin/gigli.exe"
