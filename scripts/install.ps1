@@ -1,5 +1,5 @@
-# GigliOptix Installation Script for Windows
-# This script installs GigliOptix and its dependencies
+# Gigli Installation Script for Windows
+# This script installs Gigli and its dependencies
 
 param(
     [switch]$SkipDependencies,
@@ -171,35 +171,35 @@ function Install-LLVM {
     }
 }
 
-# Function to build GigliOptix
-function Build-GigliOptix {
-    Write-Status "Building GigliOptix..."
+# Function to build Gigli
+function Build-Gigli {
+    Write-Status "Building Gigli..."
 
     if (-not (Test-Path "Cargo.toml")) {
-        Write-Error "Cargo.toml not found. Please run this script from the GigliOptix root directory."
+        Write-Error "Cargo.toml not found. Please run this script from the Gigli root directory."
         exit 1
     }
 
     try {
         cargo build --release
-        Write-Success "GigliOptix built successfully"
+        Write-Success "Gigli built successfully"
     }
     catch {
-        Write-Error "Failed to build GigliOptix: $($_.Exception.Message)"
+        Write-Error "Failed to build Gigli: $($_.Exception.Message)"
         exit 1
     }
 }
 
 # Function to install CLI globally
 function Install-CLI {
-    Write-Status "Installing GigliOptix CLI globally..."
+    Write-Status "Installing Gigli CLI globally..."
 
     try {
         cargo install --path src/cli
-        Write-Success "GigliOptix CLI installed successfully"
+        Write-Success "Gigli CLI installed successfully"
     }
     catch {
-        Write-Error "Failed to install GigliOptix CLI: $($_.Exception.Message)"
+        Write-Error "Failed to install Gigli CLI: $($_.Exception.Message)"
         exit 1
     }
 }
@@ -212,18 +212,18 @@ function Test-Installation {
         try {
             $version = gigli version 2>$null
             if ($version) {
-                Write-Success "GigliOptix CLI is working (version: $version)"
+                Write-Success "Gigli CLI is working (version: $version)"
             }
             else {
-                Write-Success "GigliOptix CLI is working"
+                Write-Success "Gigli CLI is working"
             }
         }
         catch {
-            Write-Success "GigliOptix CLI is working"
+            Write-Success "Gigli CLI is working"
         }
     }
     else {
-        Write-Error "GigliOptix CLI not found in PATH"
+        Write-Error "Gigli CLI not found in PATH"
         exit 1
     }
 
@@ -236,7 +236,7 @@ view TestApp {
     cell count = 0
 
     render {
-        <div>Hello, GigliOptix! Count: {count}</div>
+        <div>Hello, Gigli! Count: {count}</div>
     }
 }
 
@@ -264,33 +264,33 @@ fn main() {
 
 # Function to show next steps
 function Show-NextSteps {
-    Write-Host ""
-    Write-Success "🎉 GigliOptix installation completed successfully!"
-    Write-Host ""
-    Write-Host "Next steps:"
-    Write-Host "1. Create your first project:"
-    Write-Host "   gigli init my-app"
-    Write-Host ""
-    Write-Host "2. Navigate to your project:"
-    Write-Host "   cd my-app"
-    Write-Host ""
-    Write-Host "3. Start development:"
-    Write-Host "   gigli dev src/main.gx"
-    Write-Host ""
-    Write-Host "4. Build for production:"
-    Write-Host "   gigli build src/main.gx -o dist"
-    Write-Host ""
-    Write-Host "For more information, visit:"
-    Write-Host "  📖 Documentation: https://docs.giglioptix.dev"
-    Write-Host "  🐙 GitHub: https://github.com/giglioptix/giglioptix"
-    Write-Host "  💬 Discord: https://discord.gg/giglioptix"
-    Write-Host ""
-    Write-Success "Happy coding with GigliOptix! 🚀"
+    Write-Host "" -ForegroundColor $White
+    Write-Success "🎉 Gigli installation completed successfully!"
+    Write-Host "" -ForegroundColor $White
+    Write-Host "Next steps:" -ForegroundColor $Green
+    Write-Host "1. Create your first project:" -ForegroundColor $Green
+    Write-Host "   gigli init my-app" -ForegroundColor $White
+    Write-Host "" -ForegroundColor $White
+    Write-Host "2. Navigate to your project:" -ForegroundColor $Green
+    Write-Host "   cd my-app" -ForegroundColor $White
+    Write-Host "" -ForegroundColor $White
+    Write-Host "3. Start development:" -ForegroundColor $Green
+    Write-Host "   gigli dev src/main.gx" -ForegroundColor $White
+    Write-Host "" -ForegroundColor $White
+    Write-Host "4. Build for production:" -ForegroundColor $Green
+    Write-Host "   gigli build src/main.gx -o dist" -ForegroundColor $White
+    Write-Host "" -ForegroundColor $White
+    Write-Host "For more information, visit:" -ForegroundColor $Green
+    Write-Host "  📖 Documentation: https://docs.gigli.dev" -ForegroundColor $White
+    Write-Host "  🐙 GitHub: https://github.com/gigli/gigli" -ForegroundColor $White
+    Write-Host "  💬 Discord: https://discord.gg/gigli" -ForegroundColor $White
+    Write-Host "" -ForegroundColor $White
+    Write-Success "Happy coding with Gigli! 🚀"
 }
 
 # Main installation function
 function Main {
-    Write-Host "🚀 GigliOptix Installation Script for Windows"
+    Write-Host "🚀 Gigli Installation Script for Windows"
     Write-Host "=============================================="
     Write-Host ""
 
@@ -314,8 +314,8 @@ function Main {
         Write-Host ""
     }
 
-    # Build and install GigliOptix
-    Build-GigliOptix
+    # Build and install Gigli
+    Build-Gigli
     Install-CLI
     Write-Host ""
 

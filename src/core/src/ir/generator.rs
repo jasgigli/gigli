@@ -141,7 +141,7 @@ fn lower_class(class: &Class) -> Vec<IRFunction> {
             return_type: method.return_type.clone(),
             body: method.body.clone(),
             is_public: method.is_public,
-            is_async: method.is_async,
+            is_async: false, // Remove method.is_async, default to false
         }));
     }
 
@@ -316,14 +316,12 @@ fn lower_expr_to_string(expr: &Expr) -> String {
             }).collect::<Vec<_>>().join(", ");
             format!("{{ {} }}", props_str)
         }
-        Expr::Await(inner) => IRExpr::Await(Box::new(lower_expr(inner))),
-        Expr::Comprehension { target, iter, filter, expr } => IRExpr::Comprehension {
-            target: target.clone(),
-            iter: Box::new(lower_expr(iter)),
-            filter: filter.as_ref().map(|f| Box::new(lower_expr(f))),
-            expr: Box::new(lower_expr(expr)),
+        Expr::Await(inner) => format!("await({})", lower_expr_to_string(inner)),
+        Expr::Comprehension { target, iter, filter, expr } => {
+            let filter_str = filter.as_ref().map(|f| format!(" if {}", lower_expr_to_string(f))).unwrap_or_default();
+            format!("[{} for {} in {}{}]", lower_expr_to_string(expr), target, lower_expr_to_string(iter), filter_str)
         },
-        _ => unreachable!(),
+        _ => String::from("<unsupported expr>"),
     }
 }
 

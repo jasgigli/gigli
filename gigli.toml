@@ -1,10 +1,10 @@
 [project]
-name = "giglioptix"
+name = "gigli"
 version = "0.1.0"
 description = "The Future of Unified, Reactive, Ultra-Fast Software Development"
 authors = ["Junaid Ali Shah Gigli Authors"]
 license = "MIT"
-repository = "https://github.com/jasgigli/giglioptix"
+repository = "https://github.com/jasgigli/gigli"
 
 [build]
 target = "native"  # native, wasm, or both

@@ -1,22 +1,22 @@
-# GigliOptix Programming Language Specification (Draft)
+# Gigli Programming Language Specification (Draft)
 
 ## Overview
-GigliOptix is a unified programming language for modern web development, blending the strengths of TypeScript, Rust, Svelte, Python, HTML, and CSS. It compiles to WebAssembly (WASM) for high performance, safety, and seamless browser integration.
+Gigli is a unified programming language for modern web development, blending the strengths of TypeScript, Rust, Svelte, Python, HTML, and CSS. It compiles to WebAssembly (WASM) for high performance, safety, and seamless browser integration.
 
 ---
 
 ## 1. Syntax & Semantics
 
 ### 1.1. Variables & Types
-```giglioptix
+```gigli
 let count: int = 0
-let name: string = "GigliOptix"
+let name: string = "Gigli"
 let items: List<string> = ["a", "b", "c"]
 let data: Option<int> = None
 ```
 
 ### 1.2. Functions
-```giglioptix
+```gigli
 fn add(a: int, b: int): int {
     return a + b
 }
@@ -27,14 +27,14 @@ fn greet(name: string): void {
 ```
 
 ### 1.3. Ownership & Borrowing (Rust-inspired)
-```giglioptix
+```gigli
 fn process(data: &mut List<int>) {
     data.push(42)
 }
 ```
 
 ### 1.4. Async/Await (Concurrency)
-```giglioptix
+```gigli
 async fn fetch_data(url: string): Result<Response, Error> {
     let response = await http.get(url)
     return response
@@ -42,14 +42,14 @@ async fn fetch_data(url: string): Result<Response, Error> {
 ```
 
 ### 1.5. Reactivity (Svelte-like)
-```giglioptix
+```gigli
 let count: int = 0
 
 $: doubled = count * 2  // Reactive: updates when count changes
 ```
 
 ### 1.6. UI Components (HTML/CSS-like)
-```giglioptix
+```gigli
 component Counter {
     let count: int = 0
 
@@ -72,12 +72,12 @@ component Counter {
 ```
 
 ### 1.7. Pythonic Features
-```giglioptix
+```gigli
 let squares = [x * x for x in range(10) if x % 2 == 0]
 ```
 
 ### 1.8. Error Handling
-```giglioptix
+```gigli
 fn safe_divide(a: int, b: int): Result<int, string> {
     if b == 0 {
         return Err("Division by zero")
@@ -137,7 +137,7 @@ fn safe_divide(a: int, b: int): Result<int, string> {
 ---
 
 ## 9. Example: Todo App
-```giglioptix
+```gigli
 component TodoApp {
     let todos: List<string> = []
     let newTodo: string = ""
@@ -194,15 +194,15 @@ component TodoApp {
 ## 12. Quick Start Guide
 ```bash
 # Install CLI
-npm install -g giglioptix
+npm install -g gigli
 
 # Create a new project
-giglioptix new my-app
+gigli new my-app
 cd my-app
 
-giglioptix dev      # Development mode
-giglioptix build    # Production build
-giglioptix deploy   # Deploy
+gigli dev      # Development mode
+gigli build    # Production build
+gigli deploy   # Deploy
 ```
 
 ---

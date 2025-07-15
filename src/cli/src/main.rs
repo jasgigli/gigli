@@ -49,7 +49,7 @@ fn main() {
             }
         }
         Some(("dev", sub_m)) => {
-            let input = sub_m.get_one::<String>("INPUT").unwrap();
+            let input = sub_m.get_one::<String>("INPUT").map(|s| s.as_str()).unwrap_or("src/App.gx");
             let port = sub_m.get_one::<String>("PORT").unwrap();
             let host = sub_m.get_one::<String>("HOST").unwrap();
             let open = sub_m.get_flag("OPEN");
@@ -131,7 +131,7 @@ fn main() {
                 process::exit(1);
             }
         }
-        Some(("init", sub_m)) => {
+        Some(("init", sub_m)) | Some(("new", sub_m)) => {
             let name = sub_m.get_one::<String>("NAME").unwrap();
             let template = sub_m.get_one::<String>("TEMPLATE").unwrap();
             let dir = sub_m.get_one::<String>("DIR");
@@ -192,7 +192,7 @@ fn main() {
             }
         }
         Some(("version", _)) => {
-            println!("GigliOptix Compiler v0.1.0");
+            println!("Gigli Compiler v0.1.0");
             println!("Target: web, native, wasm");
             println!("License: MIT");
         }
@@ -246,9 +246,57 @@ fn run_tests(_input: &str, _watch: bool, _coverage: bool) -> Result<(), Box<dyn 
     Ok(())
 }
 
-fn init_project(_name: &str, _template: &str, _dir: Option<&String>) -> Result<(), Box<dyn std::error::Error>> {
-    // TODO: Implement project initialization
-    println!("Project initialization functionality coming soon!");
+fn init_project(name: &str, _template: &str, dir: Option<&String>) -> Result<(), Box<dyn std::error::Error>> {
+    use std::fs;
+    use std::path::Path;
+
+    let project_dir = if let Some(d) = dir {
+        Path::new(d).join(name)
+    } else {
+        Path::new(name).to_path_buf()
+    };
+    if project_dir.exists() {
+        return Err(format!("Directory '{}' already exists", project_dir.display()).into());
+    }
+    fs::create_dir_all(project_dir.join("src"))?;
+    fs::create_dir_all(project_dir.join("build"))?;
+
+    // Write starter App.gx
+    let app_gx = r#"component App {
+    let count: int = 0
+
+    fn increment() {
+        count += 1
+    }
+
+    <main>
+        <h1>Hello, Gigli!</h1>
+        <button on:click={increment}>Count: {count}</button>
+    </main>
+
+    style {
+        main { text-align: center; }
+        button { font-size: 1.5em; }
+    }
+}
+"#;
+    fs::write(project_dir.join("src/App.gx"), app_gx)?;
+
+    // Write config
+    let config = r#"[project]
+name = "App"
+version = "0.1.0"
+"#;
+    fs::write(project_dir.join("gigli.toml"), config)?;
+
+    // Write README
+    let readme = format!("# {}\n\nCreated with Gigli CLI\n", name);
+    fs::write(project_dir.join("README.md"), readme)?;
+
+    println!("Project '{}' created successfully!", name);
+    println!("Next steps:");
+    println!("  cd {}", project_dir.display());
+    println!("  gigli dev");
     Ok(())
 }
 

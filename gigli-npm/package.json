@@ -1,0 +1,39 @@
+{
+  "name": "gigli",
+  "version": "0.1.0",
+  "description": "A next-generation, unified programming language and toolchain for building ultra-fast, reactive, and maintainable software.",
+  "bin": {
+    "gigli": "./install.js"
+  },
+  "files": [
+    "install.js",
+    "gigli-win.exe",
+    "gigli-macos.exe",
+    "gigli-linux.exe"
+  ],
+  "author": "Junaid Ali Shah Gigli",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jasgigli/gigli"
+  },
+  "keywords": [
+    "gigli",
+    "cli",
+    "compiler",
+    "wasm",
+    "programming-language"
+  ],
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64"],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "bugs": {
+    "url": "https://github.com/jasgigli/gigli/issues"
+  },
+  "homepage": "https://github.com/jasgigli/gigli#readme",
+  "scripts": {
+    "postinstall": "node install.js"
+  }
+}

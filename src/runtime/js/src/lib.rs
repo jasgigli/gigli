@@ -35,6 +35,8 @@ pub fn set_inner_html(id: &str, html: &str) {
 pub fn add_event_listener(id: &str, event: &str, callback: &js_sys::Function) {
     let document = window().unwrap().document().unwrap();
     if let Some(elem) = document.get_element_by_id(id) {
+        // Fix: Clone the callback into the closure to avoid borrow escaping
+        let callback = callback.clone();
         let cb = Closure::wrap(Box::new(move |e: Event| {
             callback.call1(&JsValue::NULL, &e.into()).unwrap();
         }) as Box<dyn FnMut(_)>);
@@ -48,7 +50,10 @@ pub fn inject_style(css: &str) {
     let document = window().unwrap().document().unwrap();
     let style = document.create_element("style").unwrap();
     style.set_inner_html(css);
-    document.head().unwrap().append_child(&style).unwrap();
+    // Use get_elements_by_tag_name("head") to get the <head> element
+    if let Some(head) = document.get_elements_by_tag_name("head").item(0) {
+        head.append_child(&style).unwrap();
+    }
 }
 
 #[wasm_bindgen]

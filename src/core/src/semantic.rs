@@ -118,9 +118,7 @@ impl SemanticAnalyzer {
                 self.check_expr(then, vars, in_async);
                 self.check_expr(else_, vars, in_async);
             },
-            Expr::Option(_) | Expr::Result { .. } => {
-                // TODO: Check Option/Result construction and usage
-            },
+            // Option/Result support can be added here in the future
             Expr::ArrayLiteral(items) => for item in items { self.check_expr(item, vars, in_async); },
             Expr::ObjectLiteral(props) => for prop in props { self.check_expr(&prop.value, vars, in_async); },
             // TODO: Add more expression checks as needed

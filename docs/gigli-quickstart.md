@@ -1,19 +1,19 @@
-# GigliOptix Quick Start Guide
+# Gigli Quick Start Guide
 
-Welcome to GigliOptix! This guide will help you get started with your first project.
+Welcome to Gigli! This guide will help you get started with your first project.
 
 ---
 
 ## 1. Installation
 ```bash
-npm install -g giglioptix
+npm install -g gigli
 ```
 
 ---
 
 ## 2. Creating a New Project
 ```bash
-giglioptix new my-app
+gigli new my-app
 cd my-app
 ```
 
@@ -21,15 +21,15 @@ cd my-app
 
 ## 3. Development Workflow
 ```bash
-giglioptix dev      # Start development server with hot reload
-giglioptix build    # Build for production
-giglioptix deploy   # Deploy to your chosen platform
+gigli dev      # Start development server with hot reload
+gigli build    # Build for production
+gigli deploy   # Deploy to your chosen platform
 ```
 
 ---
 
 ## 4. Example: Counter Component
-```giglioptix
+```gigli
 component Counter {
     let count: int = 0
     fn increment() { count += 1 }
@@ -40,7 +40,7 @@ component Counter {
 ---
 
 ## 5. Example: Async Data Fetch
-```giglioptix
+```gigli
 component DataFetcher {
     let data: Option<string> = None
     async fn load() {
@@ -57,7 +57,7 @@ component DataFetcher {
 ---
 
 ## 6. Project Structure
-- `src/` — Your GigliOptix source files
+- `src/` — Your Gigli source files
 - `public/` — Static assets
 - `gigli.config.json` — Project configuration
 

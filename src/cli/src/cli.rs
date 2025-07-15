@@ -1,15 +1,15 @@
-//! CLI argument parsing for GigliOptix
+//! CLI argument parsing for Gigli
 use clap::{Arg, Command, Subcommand};
 
 pub fn build_cli() -> Command {
     Command::new("gigli")
         .version("0.1.0")
-        .about("GigliOptix Programming Language Compiler")
+        .about("Gigli Programming Language Compiler")
         .subcommand_negates_reqs(true)
         .arg_required_else_help(true)
         .subcommand(
             Command::new("build")
-                .about("Compile a GigliOptix project")
+                .about("Compile a Gigli project")
                 .arg(
                     Arg::new("INPUT")
                         .help("Input file or directory")
@@ -52,7 +52,7 @@ pub fn build_cli() -> Command {
         )
         .subcommand(
             Command::new("run")
-                .about("Compile and run a GigliOptix project")
+                .about("Compile and run a Gigli project")
                 .arg(
                     Arg::new("INPUT")
                         .help("Input file")
@@ -87,8 +87,8 @@ pub fn build_cli() -> Command {
                 .about("Start development server")
                 .arg(
                     Arg::new("INPUT")
-                        .help("Input file")
-                        .required(true)
+                        .help("Input file (defaults to src/App.gx)")
+                        .required(false)
                         .value_name("FILE")
                 )
                 .arg(
@@ -206,6 +206,7 @@ pub fn build_cli() -> Command {
         .subcommand(
             Command::new("init")
                 .about("Initialize a new project")
+                .visible_alias("new")
                 .arg(
                     Arg::new("NAME")
                         .help("Project name")

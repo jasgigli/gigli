@@ -12,11 +12,21 @@ gigli-core = { path = "../../core" }
 wasm-bindgen.workspace = true
 wasm-bindgen-futures.workspace = true
 js-sys.workspace = true
-web-sys.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 log.workspace = true
 anyhow.workspace = true
+
+[dependencies.web-sys]
+version = "0.3"
+features = [
+    "Window",
+    "Document",
+    "Element",
+    "Event",
+    "HtmlElement",
+    "HtmlCollection"
+]
 
 [features]
 wee_alloc = []

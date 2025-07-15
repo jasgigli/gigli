@@ -1,78 +1,126 @@
-# GigliOptix Programming Language
+# Gigli Programming Language
 
 > **The Future of Unified, Reactive, Ultra-Fast Software Development**
 
 ---
-   gigli init my-app
-   cd my-app
-   gigli dev src/main.gx
----
 
-
-## 🧠 Executive Summary
-
-**GigliOptix** is a next-generation, compiled programming language designed to unify the **frontend, backend, system programming, and reactive UI development** into a single paradigm. It introduces a **state-first, visually-integrated, self-healing architecture** that eliminates the boundaries between markup, style, logic, and runtime. GigliOptix is engineered to **replace traditional stacks** like HTML, CSS, JavaScript, React, Python, Rust, and Go with a **zero-boilerplate, high-performance reactive compiler model** that targets both **native binaries and WebAssembly**.
+## 🚀 Overview
+Gigli is a next-generation, unified programming language and toolchain for building ultra-fast, reactive, and maintainable software for web, native, and beyond. The Gigli CLI enables you to scaffold, develop, build, and deploy Gigli projects with ease.
 
 ---
 
-## 🌍 Why GigliOptix?
-
-Today's developers juggle:
-
-* HTML + CSS + JS for UI
-* React/Angular for frontend logic
-* Rust/Go/Python for backend
-* Complex state management libraries
-* Separate DSLs for design, data, and control flow
-
-**GigliOptix ends this fragmentation.** It introduces a **unified language** for describing **state**, **logic**, **UI**, **timing**, **events**, and **style** in one place, with:
-
-* Instant reactivity without frameworks
-* Native visual-state debugging
-* Self-healing execution flow (via `expect/recover` constructs)
-* Reactive-first syntax (`cell`, `flow`, `watch`)
-* Full compilation to native or WASM for maximum performance
+## ✨ Features
+- Unified language for frontend, backend, and system programming
+- Cross-platform CLI (Windows, macOS, Linux)
+- Project scaffolding and templates
+- Hot-reload development server
+- WASM and native builds
+- Built-in formatter, linter, and test runner
+- Zero-config, batteries-included
 
 ---
 
-## 🚀 Quick Start
+## 📦 Installation
 
-### Prerequisites
-
-- Rust 1.70+ ([Install Rust](https://rustup.rs/))
-- LLVM 13+ (for native compilation)
-- Node.js 16+ (for web tools)
-
-### Installation
+Install the Gigli CLI globally via npm:
 
 ```bash
-# Install GigliOptix CLI globally
-npm install -g @giglioptix/cli
+npm install -g gigli
+```
 
-# Or build from source
-git clone https://github.com/giglioptix/giglioptix.git
-cd giglioptix
+Or build from source:
+
+```bash
+git clone https://github.com/jasgigli/gigli.git
+cd gigli
 cargo install --path src/cli
 ```
 
-### Create Your First Project
+---
+
+## ⚡ Quick Start
+
+Create a new Gigli project and start developing:
 
 ```bash
-# Create a new project
 gigli init my-app
-
-# Navigate to project
 cd my-app
-
-# Start development server
-gigli dev src/main.gx
-
-# Build for production
-gigli build src/main.gx -o dist
-
-# Run in browser
-gigli run src/main.gx
+gigli dev
 ```
+
+This will scaffold a new project, start the development server, and open your app in the browser.
+
+---
+
+## 🛠️ CLI Usage
+
+| Command                        | Description                                 |
+|--------------------------------|---------------------------------------------|
+| `gigli init <name>`            | Create a new project                        |
+| `gigli dev`                    | Start development server with hot reload     |
+| `gigli build`                  | Build for production (WASM/native)           |
+| `gigli run <file>`             | Compile and run a Gigli file                 |
+| `gigli bundle`                 | Bundle for web deployment                    |
+| `gigli fmt <path>`             | Format code                                  |
+| `gigli lint <path>`            | Lint code                                    |
+| `gigli test <path>`            | Run tests                                    |
+| `gigli repl`                   | Start interactive REPL                       |
+
+For all options, run:
+
+```bash
+gigli --help
+```
+
+---
+
+## 📁 Project Structure
+
+A typical Gigli project looks like:
+
+```
+my-app/
+├── src/                # Gigli source files (.gx)
+│   ├── App.gx          # Main app component
+│   └── ...
+├── public/             # Static assets
+├── dist/               # Build output
+├── gigli.toml          # Project configuration
+├── package.json        # (optional) JS dependencies
+└── README.md           # Project docs
+```
+
+---
+
+## ⚙️ Configuration
+
+Project settings are managed in `gigli.toml`:
+
+```toml
+[project]
+name = "my-app"
+version = "0.1.0"
+description = "My first Gigli app"
+
+[build]
+target = "web"      # or "native"
+optimization = "release"
+
+[dev]
+port = 3000
+host = "localhost"
+auto_reload = true
+```
+
+---
+
+## 🧑‍💻 Advanced Usage
+- **Custom templates:** `gigli init my-app -t <template>`
+- **Build for native:** `gigli build --target native`
+- **Watch mode:** `gigli build --watch`
+- **Format & lint:** `gigli fmt src/ && gigli lint src/`
+- **Run tests:** `gigli test src/`
+- **REPL:** `gigli repl`
 
 ---
 
@@ -178,60 +226,7 @@ view UserList {
 
 ---
 
-## ⚙️ Key Language Features
-
-| Feature | Description | Example |
-|---------|-------------|---------|
-| **Reactive Cells** | Automatic state management | `cell count = 0` |
-| **Flows** | Lifecycle and event handling | `flow onMount { init() }` |
-| **Views** | Declarative UI components | `view Button { ... }` |
-| **Classes** | Object-oriented programming | `class Service { ... }` |
-| **Types** | Strong type system | `type User = { id: number }` |
-| **Imports** | Module system | `import { dom } from "std/web"` |
-| **Async/Await** | Modern async programming | `async fn loadData() { ... }` |
-| **Template Literals** | String interpolation | `` `Hello ${name}` `` |
-| **JSX-like Syntax** | Declarative UI | `<div class="app">{content}</div>` |
-
----
-
-## 🛠️ Development Workflow
-
-### 1. Development Mode
-```bash
-gigli dev src/main.gx --port 3000 --open
-```
-- Hot reload on file changes
-- Live error reporting
-- Browser auto-refresh
-
-### 2. Building for Production
-```bash
-gigli build src/main.gx -o dist --mode release --minify
-```
-- Optimized WebAssembly output
-- Minified JavaScript
-- Source maps for debugging
-
-### 3. Testing
-```bash
-gigli test src/ --watch --coverage
-```
-- Unit and integration tests
-- Coverage reporting
-- Watch mode for TDD
-
-### 4. Code Quality
-```bash
-gigli fmt src/ --check
-gigli lint src/ --fix
-```
-- Automatic code formatting
-- Linting with auto-fix
-- Consistent code style
-
----
-
-## 📦 Project Structure
+## 📦 Project Structure Example
 
 ```
 my-app/
@@ -253,46 +248,6 @@ my-app/
 ├── gigli.config.json       # Project configuration
 └── package.json           # Dependencies
 ```
-
----
-
-## 🔧 CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `gigli init <name>` | Create new project |
-| `gigli dev <file>` | Start development server |
-| `gigli build <file>` | Build for production |
-| `gigli run <file>` | Compile and run |
-| `gigli bundle <file>` | Bundle for web deployment |
-| `gigli fmt <path>` | Format code |
-| `gigli lint <path>` | Lint code |
-| `gigli test <path>` | Run tests |
-| `gigli repl` | Start interactive REPL |
-
----
-
-## 🎯 Use Cases
-
-| Domain | GigliOptix Role | Traditional Stack |
-|--------|----------------|-------------------|
-| **Web Development** | Single language for everything | HTML + CSS + JS + React |
-| **SaaS Applications** | Unified frontend and backend | React + Node.js + Express |
-| **UI Prototyping** | Instant visual behavior | Figma + Code |
-| **IoT Dashboards** | Reactive, real-time UIs | React + WebSocket |
-| **CLI Tools** | Cross-platform utilities | Python + Click |
-
----
-
-## 🧪 Examples
-
-Check out the `examples/` directory for complete applications:
-
-- **`simple-counter.gx`** - Basic reactive counter
-- **`modern-app.gx`** - Full-featured todo app with API
-- **`game.gx`** - Simple browser game
-- **`calculator.gx`** - Interactive calculator
-- **`weather.gx`** - Weather dashboard
 
 ---
 
@@ -332,8 +287,8 @@ Check out the `examples/` directory for complete applications:
 
 ```bash
 # Clone and setup
-git clone https://github.com/giglioptix/giglioptix.git
-cd giglioptix
+git clone https://github.com/jasgigli/gigli.git
+cd gigli
 
 # Install dependencies
 cargo build
@@ -350,21 +305,21 @@ cargo clippy
 
 ---
 
-## 📄 License
+## 📝 License
 
-MIT License (c) 2025 GigliOptix Authors
+MIT License (c) 2025 Gigli Authors
 
 ---
 
 ## 💬 Community
 
-- **GitHub**: [github.com/giglioptix](https://github.com/giglioptix)
-- **Discord**: [discord.gg/giglioptix](https://discord.gg/giglioptix)
-- **Twitter**: [@giglioptix](https://twitter.com/giglioptix)
-- **Documentation**: [docs.giglioptix.dev](https://docs.giglioptix.dev)
+- **GitHub**: [github.com/jasgigli/gigli](https://github.com/jasgigli/gigli)
+- **Discord**: [discord.gg/gigli](https://discord.gg/gigli)
+- **Twitter**: [@gigli](https://twitter.com/gigli)
+- **Documentation**: [gigli.vercel.app](https://gigli.vercel.app)
 
 ---
 
 > *"Code that lives, flows, and heals."*
 
-**Ready to build the future of web development?** [Get started now →](https://docs.giglioptix.dev/getting-started)
+**Ready to build the future of web development?** [Get started now →](https://gigli.vercel.app/getting-started)

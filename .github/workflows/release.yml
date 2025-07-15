@@ -1,0 +1,77 @@
+name: Gigli Release and Publish
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    name: Build Gigli CLI
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build binary
+        run: cargo build --release --package gigli-cli
+        env:
+          CARGO_TERM_COLOR: always
+
+      - name: Rename binary
+        id: rename
+        shell: bash
+        run: |
+          if [ "${{ runner.os }}" == "Windows" ]; then
+            mv target/release/gigli-cli.exe gigli-win.exe
+            echo "BINARY_NAME=gigli-win.exe" >> $GITHUB_ENV
+          elif [ "${{ runner.os }}" == "macOS" ]; then
+            mv target/release/gigli-cli gigli-macos
+            echo "BINARY_NAME=gigli-macos" >> $GITHUB_ENV
+          else
+            mv target/release/gigli-cli gigli-linux
+            echo "BINARY_NAME=gigli-linux" >> $GITHUB_ENV
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gigli-binaries
+          path: ${{ env.BINARY_NAME }}
+
+  publish-npm:
+    name: Publish to npm
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: gigli-binaries
+          path: gigli-npm/ # Download directly into the npm folder
+
+      - name: List files for verification
+        run: ls -l gigli-npm/
+
+      - name: Publish to npm
+        run: npm publish --access public
+        working-directory: ./gigli-npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# GigliOptix Installation Script
-# This script installs GigliOptix and its dependencies
+# Gigli Installation Script
+# This script installs Gigli and its dependencies
 
 set -e
 
@@ -156,36 +156,36 @@ install_llvm() {
     print_success "LLVM installed successfully"
 }
 
-# Function to build GigliOptix
-build_giglioptix() {
-    print_status "Building GigliOptix..."
+# Function to build Gigli
+build_gigli() {
+    print_status "Building Gigli..."
 
     if [ ! -f "Cargo.toml" ]; then
-        print_error "Cargo.toml not found. Please run this script from the GigliOptix root directory."
+        print_error "Cargo.toml not found. Please run this script from the Gigli root directory."
         exit 1
     fi
 
     cargo build --release
 
     if [ $? -eq 0 ]; then
-        print_success "GigliOptix built successfully"
+        print_success "Gigli built successfully"
     else
-        print_error "Failed to build GigliOptix"
+        print_error "Failed to build Gigli"
         exit 1
     fi
 }
 
 # Function to install CLI globally
 install_cli() {
-    print_status "Installing GigliOptix CLI globally..."
+    print_status "Installing Gigli CLI globally..."
 
     # Install the CLI crate globally
     cargo install --path src/cli
 
     if [ $? -eq 0 ]; then
-        print_success "GigliOptix CLI installed successfully"
+        print_success "Gigli CLI installed successfully"
     else
-        print_error "Failed to install GigliOptix CLI"
+        print_error "Failed to install Gigli CLI"
         exit 1
     fi
 }
@@ -196,9 +196,9 @@ verify_installation() {
 
     if command_exists gigli; then
         local version=$(gigli version 2>/dev/null || echo "unknown")
-        print_success "GigliOptix CLI is working (version: $version)"
+        print_success "Gigli CLI is working (version: $version)"
     else
-        print_error "GigliOptix CLI not found in PATH"
+        print_error "Gigli CLI not found in PATH"
         exit 1
     fi
 
@@ -211,7 +211,7 @@ view TestApp {
     cell count = 0
 
     render {
-        <div>Hello, GigliOptix! Count: {count}</div>
+        <div>Hello, Gigli! Count: {count}</div>
     }
 }
 
@@ -234,7 +234,7 @@ EOF
 # Function to show next steps
 show_next_steps() {
     echo
-    print_success "🎉 GigliOptix installation completed successfully!"
+    print_success "🎉 Gigli installation completed successfully!"
     echo
     echo "Next steps:"
     echo "1. Create your first project:"
@@ -250,16 +250,16 @@ show_next_steps() {
     echo "   gigli build src/main.gx -o dist"
     echo
     echo "For more information, visit:"
-    echo "  📖 Documentation: https://docs.giglioptix.dev"
-    echo "  🐙 GitHub: https://github.com/giglioptix/giglioptix"
-    echo "  💬 Discord: https://discord.gg/giglioptix"
+    echo "  📖 Documentation: https://docs.gigli.dev"
+    echo "  🐙 GitHub: https://github.com/gigli/gigli"
+    echo "  💬 Discord: https://discord.gg/gigli"
     echo
-    print_success "Happy coding with GigliOptix! 🚀"
+    print_success "Happy coding with Gigli! 🚀"
 }
 
 # Main installation function
 main() {
-    echo "🚀 GigliOptix Installation Script"
+    echo "🚀 Gigli Installation Script"
     echo "=================================="
     echo
 
@@ -278,8 +278,8 @@ main() {
 
     echo
 
-    # Build and install GigliOptix
-    build_giglioptix
+    # Build and install Gigli
+    build_gigli
     install_cli
 
     echo

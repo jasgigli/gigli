@@ -1,9 +1,9 @@
 {
-  "name": "giglioptix",
+  "name": "gigli",
   "version": "0.1.0",
   "description": "The Future of Unified, Reactive, Ultra-Fast Software Development",
   "main": "src/main.gx",
-  "author": "GigliOptix Team",
+  "author": "Gigli Team",
   "license": "MIT",
 
   "compiler": {
@@ -45,7 +45,7 @@
   },
 
   "devDependencies": {
-    "@giglioptix/cli": "^0.1.0"
+    "@gigli/cli": "^0.1.0"
   },
 
   "scripts": {
