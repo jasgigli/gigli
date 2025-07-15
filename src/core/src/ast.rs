@@ -1,16 +1,14 @@
-//! Abstract Syntax Tree (AST) definitions for GigliOptix
+//! Abstract Syntax Tree (AST) definitions for Gigli
 
 use std::collections::HashMap;
 
-/// AST node for a program (list of modules, functions, classes and views)
+/// AST node for a program (list of modules, functions, classes and components)
 #[derive(Debug)]
 pub struct AST {
     pub modules: Vec<Module>,
     pub functions: Vec<Function>,
     pub classes: Vec<Class>,
-    pub views: Vec<View>,
-    pub cells: Vec<Cell>,
-    pub flows: Vec<Flow>,
+    pub components: Vec<ComponentNode>, // NEW: replaces views
     pub imports: Vec<Import>,
 }
 
@@ -26,9 +24,7 @@ pub struct Module {
 pub enum ModuleItem {
     Function(Function),
     Class(Class),
-    View(View),
-    Cell(Cell),
-    Flow(Flow),
+    Component(ComponentNode), // NEW: replaces View
     Constant(Constant),
 }
 
@@ -104,101 +100,71 @@ pub struct Function {
     pub is_async: bool, // NEW: async fn support
 }
 
-/// AST node for a reactive cell (state container)
-#[derive(Debug)]
-pub struct Cell {
+/// AST node for a component (unified logic, markup, style)
+#[derive(Debug, Clone)]
+pub struct ComponentNode {
     pub name: String,
-    pub initial_value: Expr,
+    pub state_vars: Vec<StateVar>,
+    pub let_vars: Vec<LetVar>,
+    pub functions: Vec<Function>,
+    pub markup: Vec<MarkupNode>,
+    pub style: Option<String>, // raw CSS block
+}
+
+impl ComponentNode {
+    pub fn to_string_formatted(&self) -> String {
+        let mut s = String::new();
+        s.push_str(&format!("component {} {{\n", self.name));
+        // TODO: Add formatted output for state, let, fn, markup, style
+        s.push_str("}}\n");
+        s
+    }
+}
+
+/// AST node for a state variable (reactive)
+#[derive(Debug, Clone)]
+pub struct StateVar {
+    pub name: String,
     pub type_annotation: Option<Type>,
-    pub is_mutable: bool,
+    pub initial_value: Expr,
 }
 
-/// AST node for a reactive flow (time-based or event-driven logic)
-#[derive(Debug)]
-pub struct Flow {
+/// AST node for a let variable (derived, immutable or computed)
+#[derive(Debug, Clone)]
+pub struct LetVar {
     pub name: String,
-    pub trigger: FlowTrigger,
-    pub body: Vec<Stmt>,
+    pub type_annotation: Option<Type>,
+    pub value: Expr,
 }
 
-/// Flow trigger types
-#[derive(Debug)]
-pub enum FlowTrigger {
-    OnEvent { event: String, target: String },
-    OnChange { cell: String },
-    Interval { ms: u64 },
-    OnMount,
-    OnUnmount,
-}
-
-/// AST node for a view (declarative UI component)
-#[derive(Debug)]
-pub struct View {
-    pub name: String,
-    pub props: Vec<Parameter>,
-    pub cells: Vec<Cell>,
-    pub flows: Vec<Flow>,
-    pub style: Option<StyleBlock>,
-    pub render: RenderBlock,
-    pub event_handlers: Vec<EventHandler>,
-}
-
-/// Style block for a view
-#[derive(Debug)]
-pub struct StyleBlock {
-    pub properties: HashMap<String, Expr>,
-    pub media_queries: Vec<MediaQuery>,
-}
-
-/// Media query for responsive design
-#[derive(Debug)]
-pub struct MediaQuery {
-    pub condition: String,
-    pub properties: HashMap<String, Expr>,
-}
-
-/// Render block for a view
-#[derive(Debug)]
-pub struct RenderBlock {
-    pub elements: Vec<RenderElement>,
-}
-
-/// Render element types
-#[derive(Debug)]
-pub enum RenderElement {
-    Text(Expr),
+/// Markup node (HTML-like structure, including control flow blocks)
+#[derive(Debug, Clone)]
+pub enum MarkupNode {
     Element {
         tag: String,
         attributes: HashMap<String, Expr>,
-        children: Vec<RenderElement>,
-        key: Option<Expr>,
+        children: Vec<MarkupNode>,
     },
-    Conditional {
-        condition: Expr,
-        then: Vec<RenderElement>,
-        else_: Option<Vec<RenderElement>>
-    },
-    Loop {
-        iterator: String,
-        items: Expr,
-        body: Vec<RenderElement>,
-        key: Option<Expr>,
-    },
-    Fragment(Vec<RenderElement>),
-    Component {
-        name: String,
-        props: HashMap<String, Expr>,
-        children: Vec<RenderElement>,
-    },
+    Text(Expr),
+    IfBlock(IfBlockNode),
+    ForLoop(ForLoopBlockNode),
+    // ... possibly more, e.g., ComponentInclude, etc.
 }
 
-/// Event handler for a view
-#[derive(Debug)]
-pub struct EventHandler {
-    pub event: String,
-    pub target: Option<String>,
-    pub action: Vec<Stmt>,
-    pub modifiers: Vec<String>, // e.g., "prevent", "stop", "once"
+/// If block node for {#if ...}{:else}{/if}
+#[derive(Debug, Clone)]
+pub struct IfBlockNode {
+    pub condition: Expr,
+    pub then_branch: Vec<MarkupNode>,
+    pub else_branch: Option<Vec<MarkupNode>>,
+}
+
+/// For loop block node for {#for ...}{/for}
+#[derive(Debug, Clone)]
+pub struct ForLoopBlockNode {
+    pub iterator: String,
+    pub iterable: Expr,
+    pub body: Vec<MarkupNode>,
 }
 
 /// AST node for a statement
@@ -216,8 +182,8 @@ pub enum Stmt {
     ForIn { variable: String, iterable: Expr, body: Vec<Stmt> },
     ForOf { variable: String, iterable: Expr, body: Vec<Stmt> },
     Return(Option<Expr>),
-    Let { name: String, value: Expr, type_annotation: Option<Type> },
-    Mut { name: String, value: Expr, type_annotation: Option<Type> },
+    StateVarDecl(StateVar), // NEW: state variable declaration
+    LetVarDecl(LetVar),    // NEW: let variable declaration
     Block(Vec<Stmt>),
     Try { body: Vec<Stmt>, catch: Option<CatchBlock>, finally: Option<Vec<Stmt>> },
     Throw(Expr),
@@ -399,15 +365,14 @@ pub enum Token {
     Super,
     This,
     New,
-    View,
-    Cell,
-    Flow,
-    Watch,
-    On,
+    Component, // NEW: component keyword
+    State,     // NEW: state keyword
+    Struct,    // NEW: struct keyword
+    Enum,      // NEW: enum keyword
+    On,        // event handler (on:event)
     Style,
-    Render,
     If,
-    Then,
+    Then, // (may be removed later if not in new spec)
     Else,
     Let,
     Mut,
@@ -441,6 +406,13 @@ pub enum Token {
     Type,
     Const,
     Var,
+
+    // Control flow blocks (NEW for v2.0)
+    HashIf,            // {#if ...}
+    HashFor,           // {#for ...}
+    HashElse,          // {:else}
+    ForwardSlashIf,    // {/if}
+    ForwardSlashFor,   // {/for}
 
     // Identifiers and literals
     Identifier(String),

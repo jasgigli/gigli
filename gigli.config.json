@@ -1,6 +1,6 @@
 {
   "name": "gigli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The Future of Unified, Reactive, Ultra-Fast Software Development",
   "main": "src/main.gx",
   "author": "Gigli Team",

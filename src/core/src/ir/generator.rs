@@ -1,4 +1,4 @@
-//! IR generation for GigliOptix
+//! IR generation for Gigli
 use crate::ast::*;
 
 #[derive(Debug)]
@@ -47,14 +47,9 @@ pub fn generate_ir(ast: &AST) -> IRModule {
         functions.push(lower_function(function));
     }
 
-    // Convert views
-    for view in &ast.views {
-        functions.push(lower_view(view));
-    }
-
-    // Convert flows
-    for flow in &ast.flows {
-        functions.push(lower_flow(flow));
+    // Convert components
+    for component in &ast.components {
+        functions.push(lower_component(component));
     }
 
     // Convert classes
@@ -79,54 +74,65 @@ fn lower_function(f: &Function) -> IRFunction {
     }
 }
 
-fn lower_view(view: &View) -> IRFunction {
+fn lower_component(component: &ComponentNode) -> IRFunction {
     let mut body = Vec::new();
 
-    // Convert cells
-    for cell in &view.cells {
-        body.push(IRStmt::Call {
-            func: "cell".to_string(),
-            args: vec![
-                IRExpr::StringLiteral(cell.name.clone()),
-                lower_expr(&cell.initial_value),
-            ],
+    // Lower state vars (reactive)
+    for state in &component.state_vars {
+        body.push(IRStmt::Assign {
+            target: state.name.clone(),
+            value: lower_expr(&state.initial_value),
         });
     }
 
-    // Convert flows
-    for flow in &view.flows {
-        body.push(IRStmt::Call {
-            func: "flow".to_string(),
-            args: vec![
-                IRExpr::StringLiteral(flow.name.clone()),
-                IRExpr::StringLiteral(format!("{:?}", flow.trigger)),
-            ],
+    // Lower let vars (derived)
+    for letv in &component.let_vars {
+        body.push(IRStmt::Assign {
+            target: letv.name.clone(),
+            value: lower_expr(&letv.value),
         });
     }
 
-    // Convert render block
-    body.push(IRStmt::Call {
-        func: "render".to_string(),
-        args: vec![lower_render_block(&view.render)],
-    });
+    // Lower functions
+    for func in &component.functions {
+        body.push(IRStmt::Call {
+            func: format!("fn_{}", func.name),
+            args: vec![], // TODO: handle params/args
+        });
+    }
+
+    // Lower markup (UI render)
+    for node in &component.markup {
+        body.push(IRStmt::Render(lower_markup(node)));
+    }
 
     IRFunction {
-        name: format!("view_{}", view.name),
+        name: format!("component_{}", component.name),
         body,
     }
 }
 
-fn lower_flow(flow: &Flow) -> IRFunction {
-    let mut body = Vec::new();
-
-    // Convert flow body to statements
-    for stmt in &flow.body {
-        body.push(lower_stmt(stmt));
-    }
-
-    IRFunction {
-        name: format!("flow_{}", flow.name),
-        body,
+fn lower_markup(node: &MarkupNode) -> IRExpr {
+    match node {
+        MarkupNode::Element { tag, attributes, children } => {
+            let tag_str = tag.clone();
+            let attrs_str = attributes.iter().map(|(k, v)| format!("{}=\"{}\"", k, lower_expr_to_string(v))).collect::<Vec<_>>().join(" ");
+            let children_str = children.iter().map(|c| lower_markup(c)).map(|e| match e { IRExpr::StringLiteral(s) => s, _ => String::from("<unsupported>") }).collect::<Vec<_>>().join("");
+            IRExpr::StringLiteral(format!("<{} {}>{}</{}>", tag_str, attrs_str, children_str, tag_str))
+        }
+        MarkupNode::Text(expr) => IRExpr::StringLiteral(lower_expr_to_string(expr)),
+        MarkupNode::IfBlock(ifblock) => {
+            let cond_str = lower_expr_to_string(&ifblock.condition);
+            let then_str = ifblock.then_branch.iter().map(|n| lower_markup(n)).map(|e| match e { IRExpr::StringLiteral(s) => s, _ => String::from("<unsupported>") }).collect::<Vec<_>>().join("");
+            let else_str = ifblock.else_branch.as_ref().map(|b| b.iter().map(|n| lower_markup(n)).map(|e| match e { IRExpr::StringLiteral(s) => s, _ => String::from("<unsupported>") }).collect::<Vec<_>>().join("")).unwrap_or_default();
+            IRExpr::StringLiteral(format!("if({}){{{}}}else{{{}}}", cond_str, then_str, else_str))
+        }
+        MarkupNode::ForLoop(forblock) => {
+            let iter_str = forblock.iterator.clone();
+            let iterable_str = lower_expr_to_string(&forblock.iterable);
+            let body_str = forblock.body.iter().map(|n| lower_markup(n)).map(|e| match e { IRExpr::StringLiteral(s) => s, _ => String::from("<unsupported>") }).collect::<Vec<_>>().join("");
+            IRExpr::StringLiteral(format!("for({} in {}){{{}}}", iter_str, iterable_str, body_str))
+        }
     }
 }
 
@@ -160,53 +166,6 @@ fn lower_class(class: &Class) -> Vec<IRFunction> {
     functions
 }
 
-fn lower_render_block(render: &RenderBlock) -> IRExpr {
-    // For now, convert render block to a string representation
-    let mut elements = Vec::new();
-    for element in &render.elements {
-        elements.push(lower_render_element(element));
-    }
-
-    // Join elements with newlines
-    IRExpr::StringLiteral(elements.join("\n"))
-}
-
-fn lower_render_element(element: &RenderElement) -> String {
-    match element {
-        RenderElement::Text(expr) => {
-            format!("{}", lower_expr_to_string(expr))
-        }
-        RenderElement::Element { tag, attributes, children, key: _ } => {
-            let mut attrs = Vec::new();
-            for (key, value) in attributes {
-                attrs.push(format!("{}=\"{}\"", key, lower_expr_to_string(value)));
-            }
-            let attr_str = attrs.join(" ");
-            let children_str = children.iter().map(|c| lower_render_element(c)).collect::<Vec<_>>().join("");
-            format!("<{} {}>{}</{}>", tag, attr_str, children_str, tag)
-        }
-        RenderElement::Conditional { condition, then, else_ } => {
-            let condition_str = lower_expr_to_string(condition);
-            let then_str = then.iter().map(|e| lower_render_element(e)).collect::<Vec<_>>().join("");
-            let else_str = else_.as_ref().map(|elements| elements.iter().map(|e| lower_render_element(e)).collect::<Vec<_>>().join("")).unwrap_or_default();
-            format!("if({}) {{ {} }} else {{ {} }}", condition_str, then_str, else_str)
-        }
-        RenderElement::Loop { iterator, items, body, key: _ } => {
-            let items_str = lower_expr_to_string(items);
-            let body_str = body.iter().map(|e| lower_render_element(e)).collect::<Vec<_>>().join("");
-            format!("for({} in {}) {{ {} }}", iterator, items_str, body_str)
-        }
-        RenderElement::Fragment(elements) => {
-            elements.iter().map(|e| lower_render_element(e)).collect::<Vec<_>>().join("")
-        }
-        RenderElement::Component { name, props, children } => {
-            let props_str = props.iter().map(|(k, v)| format!("{}={}", k, lower_expr_to_string(v))).collect::<Vec<_>>().join(" ");
-            let children_str = children.iter().map(|e| lower_render_element(e)).collect::<Vec<_>>().join("");
-            format!("<{} {}>{}</{}>", name, props_str, children_str, name)
-        }
-    }
-}
-
 fn lower_expr_to_string(expr: &Expr) -> String {
     match expr {
         Expr::StringLiteral(s) => s.clone(),
@@ -215,7 +174,6 @@ fn lower_expr_to_string(expr: &Expr) -> String {
         Expr::NullLiteral => "null".to_string(),
         Expr::UndefinedLiteral => "undefined".to_string(),
         Expr::Identifier(s) => s.clone(),
-        Expr::CellAccess(s) => format!("cell_{}", s),
         Expr::BinaryOp { left, op, right } => {
             let op_str = match op {
                 BinaryOp::Add => "+",
@@ -321,7 +279,7 @@ fn lower_expr_to_string(expr: &Expr) -> String {
             let filter_str = filter.as_ref().map(|f| format!(" if {}", lower_expr_to_string(f))).unwrap_or_default();
             format!("[{} for {} in {}{}]", lower_expr_to_string(expr), target, lower_expr_to_string(iter), filter_str)
         },
-        _ => String::from("<unsupported expr>"),
+        Expr::CellAccess(_) => String::from("<unsupported: cell access>"),
     }
 }
 
@@ -375,19 +333,13 @@ fn lower_stmt(s: &Stmt) -> IRStmt {
             ],
         },
         Stmt::Return(value) => IRStmt::Return(value.as_ref().map(|v| lower_expr(v))),
-        Stmt::Let { name, value, type_annotation: _ } => IRStmt::Call {
-            func: "let".to_string(),
-            args: vec![
-                IRExpr::StringLiteral(name.clone()),
-                lower_expr(value),
-            ],
+        Stmt::StateVarDecl(s) => IRStmt::Assign {
+            target: s.name.clone(),
+            value: lower_expr(&s.initial_value),
         },
-        Stmt::Mut { name, value, type_annotation: _ } => IRStmt::Call {
-            func: "mut".to_string(),
-            args: vec![
-                IRExpr::StringLiteral(name.clone()),
-                lower_expr(value),
-            ],
+        Stmt::LetVarDecl(l) => IRStmt::Assign {
+            target: l.name.clone(),
+            value: lower_expr(&l.value),
         },
         Stmt::Block(statements) => IRStmt::Call {
             func: "block".to_string(),
@@ -437,7 +389,6 @@ fn lower_stmt(s: &Stmt) -> IRStmt {
             filter: filter.as_ref().map(|f| lower_expr(f)),
             expr: lower_expr(expr),
         },
-        _ => unreachable!(),
     }
 }
 
@@ -449,7 +400,6 @@ fn lower_expr(e: &Expr) -> IRExpr {
         Expr::NullLiteral => IRExpr::StringLiteral("null".to_string()),
         Expr::UndefinedLiteral => IRExpr::StringLiteral("undefined".to_string()),
         Expr::Identifier(s) => IRExpr::Identifier(s.clone()),
-        Expr::CellAccess(s) => IRExpr::Identifier(format!("cell_{}", s)),
         Expr::BinaryOp { left, op, right } => IRExpr::StringLiteral(format!("({} {} {})",
             lower_expr_to_string(left),
             match op {
@@ -555,6 +505,6 @@ fn lower_expr(e: &Expr) -> IRExpr {
             filter: filter.as_ref().map(|f| Box::new(lower_expr(f))),
             expr: Box::new(lower_expr(expr)),
         },
-        _ => unreachable!(),
+        Expr::CellAccess(_) => IRExpr::StringLiteral("<unsupported: cell access>".to_string()),
     }
 }

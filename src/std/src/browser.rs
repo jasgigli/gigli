@@ -1,4 +1,4 @@
-//! Standard library: Browser APIs for GigliOptix
+//! Standard library: Browser APIs for Gigli
 
 /// Provides DOM manipulation functions for GigliOptix programs targeting the web.
 pub mod dom {

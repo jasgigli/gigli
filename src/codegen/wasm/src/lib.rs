@@ -1,4 +1,4 @@
-//! WASM backend code generation for GigliOptix
+//! WASM backend code generation for Gigli
 
 use gigli_core::ir::IRModule;
 

@@ -1,4 +1,4 @@
-//! Native backend code generation for GigliOptix
+//! Native backend code generation for Gigli
 
 pub fn emit_native() {
     // TODO: Emit native code using LLVM

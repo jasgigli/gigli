@@ -1,4 +1,4 @@
-//! Intermediate Representation (IR) module for GigliOptix
+//! Intermediate Representation (IR) module for Gigli
 
 pub mod generator;
 

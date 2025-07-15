@@ -1,4 +1,4 @@
-//! Lexer for GigliOptix source code
+//! Lexer for Gigli source code
 use crate::ast::Token;
 
 pub struct Lexer {
@@ -32,6 +32,68 @@ impl Lexer {
             }
 
             if let Some(ch) = self.current_char {
+                // --- NEW: Recognize control flow block tokens ---
+                if ch == '{' && self.peek() == Some('#') {
+                    self.advance(); // skip '{'
+                    self.advance(); // skip '#'
+                    // Read block type (if, for, etc.)
+                    let mut block_type = String::new();
+                    while let Some(c) = self.current_char {
+                        if c.is_alphabetic() {
+                            block_type.push(c);
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                    match block_type.as_str() {
+                        "if" => tokens.push(Token::HashIf),
+                        "for" => tokens.push(Token::HashFor),
+                        _ => return Err(format!("Unknown block type: {{#{}}}", block_type)),
+                    }
+                    continue;
+                }
+                if ch == '{' && self.peek() == Some(':') {
+                    self.advance(); // skip '{'
+                    self.advance(); // skip ':'
+                    // Read 'else'
+                    let mut else_kw = String::new();
+                    while let Some(c) = self.current_char {
+                        if c.is_alphabetic() {
+                            else_kw.push(c);
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                    if else_kw == "else" {
+                        tokens.push(Token::HashElse);
+                        continue;
+                    } else {
+                        return Err(format!("Unknown block: {{:{} }}", else_kw));
+                    }
+                }
+                if ch == '{' && self.peek() == Some('/') {
+                    self.advance(); // skip '{'
+                    self.advance(); // skip '/'
+                    // Read block type (if, for, etc.)
+                    let mut block_type = String::new();
+                    while let Some(c) = self.current_char {
+                        if c.is_alphabetic() {
+                            block_type.push(c);
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                    match block_type.as_str() {
+                        "if" => tokens.push(Token::ForwardSlashIf),
+                        "for" => tokens.push(Token::ForwardSlashFor),
+                        _ => return Err(format!("Unknown closing block: {{/{} }}", block_type)),
+                    }
+                    continue;
+                }
+                // --- END NEW ---
                 match ch {
                     // Identifiers and keywords
                     'a'..='z' | 'A'..='Z' | '_' => {
@@ -186,13 +248,12 @@ impl Lexer {
         // Check if it's a keyword
         match identifier.as_str() {
             "fn" => Ok(Token::Fn),
-            "view" => Ok(Token::View),
-            "cell" => Ok(Token::Cell),
-            "flow" => Ok(Token::Flow),
-            "watch" => Ok(Token::Watch),
+            "component" => Ok(Token::Component), // NEW
+            "state" => Ok(Token::State),         // NEW
+            "struct" => Ok(Token::Struct),       // NEW
+            "enum" => Ok(Token::Enum),           // NEW
             "on" => Ok(Token::On),
             "style" => Ok(Token::Style),
-            "render" => Ok(Token::Render),
             "if" => Ok(Token::If),
             "then" => Ok(Token::Then),
             "else" => Ok(Token::Else),

@@ -5,6 +5,7 @@ use gigli_core::ir::generator::{generate_ir, IRModule};
 use gigli_codegen_wasm::emit_wasm;
 use std::path::Path;
 use std::process;
+use std::path::PathBuf;
 
 mod cli;
 mod bundle;
@@ -222,21 +223,150 @@ fn run_project(_input: &str, _host: &str, _port: &str, _open: bool) -> Result<()
     Ok(())
 }
 
-fn start_dev_server(_input: &str, _host: &str, _port: &str, _open: bool) -> Result<(), Box<dyn std::error::Error>> {
-    // TODO: Implement dev server logic
-    println!("Development server functionality coming soon!");
+fn start_dev_server(input: &str, host: &str, port: &str, open: bool) -> Result<(), Box<dyn std::error::Error>> {
+    use std::process::{Command, Stdio};
+    use std::thread;
+    use std::time::Duration;
+    use std::fs;
+    use std::path::Path;
+
+    // === 1. Parse source code ===
+    let ast = parse_file(input);
+
+    // === 2. Generate IR ===
+    let ir = generate_ir(&ast);
+
+    // === 3. Emit WASM ===
+    let out_dir = "dist";
+    let wasm_path = Path::new(out_dir).join("main.wasm");
+    fs::create_dir_all(out_dir)?;
+    emit_wasm(&ir, wasm_path.to_str().unwrap());
+    // No need to wait or copy anymore
+    bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
+
+    // === 4. Bundle for web ===
+    if let Err(e) = std::panic::catch_unwind(|| {
+        bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
+    }) {
+        eprintln!("\n[Error] Failed to bundle for web: {:?}", e);
+        eprintln!("This is often caused by the WASM file being locked. Please close any programs using dist/main.wasm and try again.");
+        return Err("Failed to bundle for web".into());
+    }
+
+    // === 5. Start Node.js dev server ===
+    let dev_server_filename = "dev-server.js";
+    let dev_server_path_check = Path::new(out_dir).join(dev_server_filename);
+    if !dev_server_path_check.exists() {
+        return Err("dev-server.js not found in output directory".into());
+    }
+
+    // Spawn the Node.js server
+    let port_num = port.parse::<u16>().unwrap_or(3000);
+    let mut child = match Command::new("node")
+        .arg(dev_server_filename) // Pass only the filename, as CWD is 'dist'
+        .current_dir(out_dir)
+        .env("PORT", port)
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
+        .spawn() {
+        Ok(child) => child,
+        Err(e) => {
+            eprintln!("\n[Error] Failed to start Node.js dev server: {}", e);
+            eprintln!("Make sure Node.js is installed and available in your PATH.");
+            return Err("Failed to start dev server".into());
+        }
+    };
+
+    // Wait a moment for the server to start
+    thread::sleep(Duration::from_millis(800));
+
+    // Optionally open the browser
+    if open {
+        let url = format!("http://{}:{}", host, port_num);
+        if cfg!(target_os = "windows") {
+            Command::new("cmd").args(["/C", "start", &url]).spawn().ok();
+        } else if cfg!(target_os = "macos") {
+            Command::new("open").arg(&url).spawn().ok();
+        } else if cfg!(target_os = "linux") {
+            Command::new("xdg-open").arg(&url).spawn().ok();
+        }
+    }
+
+    println!("Development server running at http://{}:{}", host, port_num);
+    println!("Press Ctrl+C to stop.");
+
+    // Wait for the server process to exit
+    let status = child.wait()?;
+    if !status.success() {
+        return Err("Dev server exited with error".into());
+    }
+
     Ok(())
 }
 
-fn format_code(_input: &str, _check: bool) -> Result<(), Box<dyn std::error::Error>> {
-    // TODO: Implement code formatting
-    println!("Code formatting functionality coming soon!");
+fn format_code(input: &str, check: bool) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Formatting file: {}", input);
+    let source = std::fs::read_to_string(input)?;
+
+    // 1. Lexing
+    let mut lexer = gigli_core::lexer::Lexer::new(&source);
+    let tokens = match lexer.tokenize() {
+        Ok(t) => t,
+        Err(e) => {
+            println!("❌ Lexing error: {}", e);
+            process::exit(1);
+        }
+    };
+
+    // 2. Parsing
+    let mut parser = gigli_core::parser::Parser::new(tokens);
+    let _ast = match parser.parse() {
+        Ok(a) => a,
+        Err(e) => {
+            println!("❌ Parsing error: {}", e);
+            process::exit(1);
+        }
+    };
+
+    if check {
+        println!("✅ File is well-formed.");
+    } else {
+        // TODO: Implement pretty-printing of the AST
+        println!("✅ File is well-formed. Pretty-printing coming soon!");
+        // For now, just write the original source back
+        // In a real implementation, we'd pretty-print the AST.
+        // std::fs::write(input, source)?;
+    }
+
     Ok(())
 }
 
-fn lint_code(_input: &str, _fix: bool) -> Result<(), Box<dyn std::error::Error>> {
-    // TODO: Implement code linting
-    println!("Code linting functionality coming soon!");
+fn lint_code(input: &str, _fix: bool) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Checking file: {}", input);
+    let source = std::fs::read_to_string(input)?;
+
+    // 1. Lexing
+    let mut lexer = gigli_core::lexer::Lexer::new(&source);
+    let tokens = lexer.tokenize()?;
+
+    // 2. Parsing
+    let mut parser = gigli_core::parser::Parser::new(tokens);
+    let ast = parser.parse()?;
+
+    // 3. Semantic Analysis
+    let mut analyzer = gigli_core::semantic::SemanticAnalyzer::new();
+    analyzer.analyze(&ast);
+
+    if analyzer.errors.is_empty() {
+        println!("✅ No errors found.");
+    } else {
+        println!("❌ Found {} errors:", analyzer.errors.len());
+        for error in analyzer.errors {
+            println!("  - {}", error);
+        }
+        process::exit(1);
+    }
+
     Ok(())
 }
 
@@ -250,53 +380,112 @@ fn init_project(name: &str, _template: &str, dir: Option<&String>) -> Result<(),
     use std::fs;
     use std::path::Path;
 
-    let project_dir = if let Some(d) = dir {
-        Path::new(d).join(name)
-    } else {
-        Path::new(name).to_path_buf()
-    };
+    let project_dir = dir.map_or(PathBuf::from(name), |d| PathBuf::from(d));
     if project_dir.exists() {
-        return Err(format!("Directory '{}' already exists", project_dir.display()).into());
+        return Err(format!("Directory '{}' already exists.", project_dir.display()).into());
     }
-    fs::create_dir_all(project_dir.join("src"))?;
-    fs::create_dir_all(project_dir.join("build"))?;
+    fs::create_dir_all(&project_dir.join("src"))?;
 
-    // Write starter App.gx
-    let app_gx = r#"component App {
-    let count: int = 0
+    let gigli_toml = format!(r#"[project]
+name = "{}"
+version = "0.1.0"
+"#, name);
+    fs::write(project_dir.join("gigli.toml"), gigli_toml)?;
 
-    fn increment() {
-        count += 1
+    let app_gx_content = r#"// Define our data structure
+struct TodoItem {
+    id: int,
+    text: string,
+    completed: bool,
+}
+
+component TodoApp {
+    // --- Logic & State ---
+    state todos: List<TodoItem> = []
+    state newTodoText: string = ""
+
+    // Derived reactive state: re-calculates automatically
+    let remainingCount = todos.filter(|t| !t.completed).len()
+
+    fn addTodo() {
+        if newTodoText.trim() == "" { return }
+
+        let newTodo = TodoItem {
+            id: Date.now(), // Assume a built-in Date API
+            text: newTodoText,
+            completed: false,
+        }
+
+        todos.push(newTodo)
+        newTodoText = "" // Clear the input automatically
     }
 
-    <main>
-        <h1>Hello, Gigli!</h1>
-        <button on:click={increment}>Count: {count}</button>
-    </main>
+    fn toggleTodo(id: int) {
+        for todo in &mut todos {
+            if todo.id == id {
+                todo.completed = !todo.completed
+                break
+            }
+        }
+    }
 
+    // --- Markup (View) ---
+    <div class="app-container">
+        <header>
+            <h1>Gigli Todos</h1>
+            <h2>{remainingCount} items remaining</h2>
+        </header>
+
+        <form class="add-todo-form" on:submit:preventDefault={addTodo}>
+            <input
+                placeholder="What needs to be done?"
+                bind:value={newTodoText}
+            />
+            <button type="submit">Add Todo</button>
+        </form>
+
+        <ul class="todo-list">
+            {#for todo in todos}
+                <li
+                    class:completed={todo.completed}
+                    on:click={() => toggleTodo(todo.id)}
+                >
+                    {todo.text}
+                </li>
+            {/for}
+        </ul>
+    </div>
+
+    // --- Style (Scoped by default) ---
     style {
-        main { text-align: center; }
-        button { font-size: 1.5em; }
+        .app-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .todo-list li {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .todo-list li:hover {
+            background-color: #f9f9f9;
+        }
+        .todo-list li.completed {
+            text-decoration: line-through;
+            color: #aaa;
+        }
     }
 }
 "#;
-    fs::write(project_dir.join("src/App.gx"), app_gx)?;
+    fs::write(project_dir.join("src/App.gx"), app_gx_content)?;
 
-    // Write config
-    let config = r#"[project]
-name = "App"
-version = "0.1.0"
-"#;
-    fs::write(project_dir.join("gigli.toml"), config)?;
-
-    // Write README
-    let readme = format!("# {}\n\nCreated with Gigli CLI\n", name);
-    fs::write(project_dir.join("README.md"), readme)?;
-
-    println!("Project '{}' created successfully!", name);
-    println!("Next steps:");
+    println!("✅ Project '{}' created successfully.", name);
+    println!("To get started, run:");
     println!("  cd {}", project_dir.display());
     println!("  gigli dev");
+
     Ok(())
 }
 

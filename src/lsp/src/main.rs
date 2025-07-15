@@ -1,4 +1,4 @@
-//! Language Server Protocol entry point for GigliOptix
+//! Language Server Protocol entry point for Gigli
 
 use gigli_lsp::lsp;
 

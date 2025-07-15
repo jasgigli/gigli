@@ -1,4 +1,4 @@
-//! Language Server Protocol implementation for GigliOptix
+//! Language Server Protocol implementation for Gigli
 
 use anyhow::Result;
 use tower_lsp::{LspService, Server};

@@ -1,4 +1,4 @@
-//! Parser for GigliOptix source code
+//! Parser for Gigli source code
 use crate::ast::*;
 use crate::lexer::Lexer;
 use std::collections::HashMap;
@@ -23,9 +23,7 @@ impl Parser {
 
     pub fn parse(&mut self) -> Result<AST, String> {
         let mut functions = Vec::new();
-        let mut views = Vec::new();
-        let mut cells = Vec::new();
-        let mut flows = Vec::new();
+        let mut components = Vec::new();
         let mut classes = Vec::new();
         let mut modules = Vec::new();
         let mut imports = Vec::new();
@@ -35,14 +33,8 @@ impl Parser {
                 Some(Token::Fn) => {
                     functions.push(self.parse_function()?);
                 }
-                Some(Token::View) => {
-                    views.push(self.parse_view()?);
-                }
-                Some(Token::Cell) => {
-                    cells.push(self.parse_cell()?);
-                }
-                Some(Token::Flow) => {
-                    flows.push(self.parse_flow()?);
+                Some(Token::Component) => {
+                    components.push(self.parse_component()?);
                 }
                 Some(Token::Class) => {
                     classes.push(self.parse_class()?);
@@ -53,6 +45,7 @@ impl Parser {
                 Some(Token::Import) => {
                     imports.push(self.parse_import()?);
                 }
+                Some(Token::EOF) => break,
                 _ => {
                     return Err(format!("Unexpected token: {:?}", self.current_token));
                 }
@@ -61,9 +54,7 @@ impl Parser {
 
         Ok(AST {
             functions,
-            views,
-            cells,
-            flows,
+            components,
             classes,
             modules,
             imports,
@@ -318,6 +309,202 @@ impl Parser {
         Ok(Constructor { params, body })
     }
 
+    fn parse_component(&mut self) -> Result<ComponentNode, String> {
+        self.expect(Token::Component)?;
+        let name = self.expect_identifier()?;
+        self.expect(Token::LeftBrace)?;
+
+        let mut state_vars = Vec::new();
+        let mut let_vars = Vec::new();
+        let mut functions = Vec::new();
+        let mut markup = Vec::new();
+        let mut style = None;
+
+        while self.current_token != Some(Token::RightBrace) {
+            match &self.current_token {
+                Some(Token::State) => {
+                    state_vars.push(self.parse_state_var()?);
+                }
+                Some(Token::Let) => {
+                    let_vars.push(self.parse_let_var()?);
+                }
+                Some(Token::Fn) => {
+                    functions.push(self.parse_function()?);
+                }
+                Some(Token::Style) => {
+                    style = Some(self.parse_style_block_raw()?);
+                }
+                // Markup parsing: parse until the end of the component block
+                _ => {
+                    markup.append(&mut self.parse_markup()?);
+                }
+            }
+        }
+        self.expect(Token::RightBrace)?;
+
+        Ok(ComponentNode {
+            name,
+            state_vars,
+            let_vars,
+            functions,
+            markup,
+            style,
+        })
+    }
+
+    /// Parse a sequence of markup nodes (HTML-like, text, or control flow blocks)
+    fn parse_markup(&mut self) -> Result<Vec<MarkupNode>, String> {
+        let mut nodes = Vec::new();
+        while let Some(token) = &self.current_token {
+            match token {
+                Token::Identifier(_) | Token::StringLiteral(_) => {
+                    nodes.push(self.parse_markup_text_or_element()?);
+                }
+                Token::HashIf => {
+                    nodes.push(MarkupNode::IfBlock(self.parse_if_block()?));
+                }
+                Token::HashFor => {
+                    nodes.push(MarkupNode::ForLoop(self.parse_for_block()?));
+                }
+                Token::RightBrace | Token::ForwardSlashIf | Token::ForwardSlashFor | Token::HashElse => {
+                    // End of this markup context
+                    break;
+                }
+                _ => {
+                    // Skip unrecognized tokens in markup for now
+                    self.advance();
+                }
+            }
+        }
+        Ok(nodes)
+    }
+
+    /// Parse a text node or an HTML-like element
+    fn parse_markup_text_or_element(&mut self) -> Result<MarkupNode, String> {
+        match &self.current_token {
+            Some(Token::Identifier(tag)) => {
+                // Parse as an element: <tag ...>...</tag>
+                let tag_name = tag.clone();
+                self.advance();
+                let mut attributes = std::collections::HashMap::new();
+                // Parse attributes (identifier = expr pairs)
+                while let Some(Token::Identifier(attr)) = &self.current_token {
+                    let attr_name = attr.clone();
+                    self.advance();
+                    if self.current_token == Some(Token::Assign) {
+                        self.advance();
+                        let value = self.parse_expression()?;
+                        attributes.insert(attr_name, value);
+                    } else {
+                        // Boolean attribute
+                        attributes.insert(attr_name, Expr::BooleanLiteral(true));
+                    }
+                }
+                // Children (nested markup)
+                let children = if let Some(Token::LeftBrace) = &self.current_token {
+                    self.advance();
+                    let children = self.parse_markup()?;
+                    self.expect(Token::RightBrace)?;
+                    children
+                } else {
+                    Vec::new()
+                };
+                Ok(MarkupNode::Element {
+                    tag: tag_name,
+                    attributes,
+                    children,
+                })
+            }
+            Some(Token::StringLiteral(s)) => {
+                let expr = Expr::StringLiteral(s.clone());
+                self.advance();
+                Ok(MarkupNode::Text(expr))
+            }
+            _ => Err(format!("Expected markup element or text, got: {:?}", self.current_token)),
+        }
+    }
+
+    /// Parse an {#if ...} ... {:else} ... {/if} block
+    fn parse_if_block(&mut self) -> Result<IfBlockNode, String> {
+        self.expect(Token::HashIf)?;
+        let condition = self.parse_expression()?;
+        let then_branch = self.parse_markup()?;
+        let else_branch = if self.current_token == Some(Token::HashElse) {
+            self.advance();
+            Some(self.parse_markup()?)
+        } else {
+            None
+        };
+        self.expect(Token::ForwardSlashIf)?;
+        Ok(IfBlockNode {
+            condition,
+            then_branch,
+            else_branch,
+        })
+    }
+
+    /// Parse a {#for item in items} ... {/for} block
+    fn parse_for_block(&mut self) -> Result<ForLoopBlockNode, String> {
+        self.expect(Token::HashFor)?;
+        let iterator = self.expect_identifier()?;
+        self.expect(Token::In)?;
+        let iterable = self.parse_expression()?;
+        let body = self.parse_markup()?;
+        self.expect(Token::ForwardSlashFor)?;
+        Ok(ForLoopBlockNode {
+            iterator,
+            iterable,
+            body,
+        })
+    }
+
+    fn parse_state_var(&mut self) -> Result<StateVar, String> {
+        self.expect(Token::State)?;
+        let name = self.expect_identifier()?;
+        let mut type_annotation = None;
+        if self.current_token == Some(Token::Colon) {
+            self.advance();
+            type_annotation = Some(self.parse_type()?);
+        }
+        self.expect(Token::Assign)?;
+        let initial_value = self.parse_expression()?;
+        self.expect(Token::Semicolon)?;
+        Ok(StateVar { name, type_annotation, initial_value })
+    }
+
+    fn parse_let_var(&mut self) -> Result<LetVar, String> {
+        self.expect(Token::Let)?;
+        let name = self.expect_identifier()?;
+        let mut type_annotation = None;
+        if self.current_token == Some(Token::Colon) {
+            self.advance();
+            type_annotation = Some(self.parse_type()?);
+        }
+        self.expect(Token::Assign)?;
+        let value = self.parse_expression()?;
+        self.expect(Token::Semicolon)?;
+        Ok(LetVar { name, type_annotation, value })
+    }
+
+    fn parse_style_block_raw(&mut self) -> Result<String, String> {
+        self.expect(Token::Style)?;
+        // For now, just collect everything until the next right brace as a raw string
+        let mut css = String::new();
+        if self.current_token == Some(Token::LeftBrace) {
+            self.advance();
+            while self.current_token != Some(Token::RightBrace) && self.current_token != Some(Token::EOF) {
+                // This is a stub: in a real parser, we'd handle nested braces and parse CSS properly
+                if let Some(Token::Identifier(s)) = &self.current_token {
+                    css.push_str(s);
+                    css.push(' ');
+                }
+                self.advance();
+            }
+            self.expect(Token::RightBrace)?;
+        }
+        Ok(css)
+    }
+
     fn parse_module(&mut self) -> Result<Module, String> {
         self.expect(Token::Module)?;
         let name = self.expect_identifier()?;
@@ -332,14 +519,8 @@ impl Parser {
                 Some(Token::Class) => {
                     items.push(ModuleItem::Class(self.parse_class()?));
                 }
-                Some(Token::View) => {
-                    items.push(ModuleItem::View(self.parse_view()?));
-                }
-                Some(Token::Cell) => {
-                    items.push(ModuleItem::Cell(self.parse_cell()?));
-                }
-                Some(Token::Flow) => {
-                    items.push(ModuleItem::Flow(self.parse_flow()?));
+                Some(Token::Component) => {
+                    items.push(ModuleItem::Component(self.parse_component()?));
                 }
                 _ => {
                     return Err(format!("Unexpected token in module: {:?}", self.current_token));
@@ -376,275 +557,6 @@ impl Parser {
         self.expect(Token::Semicolon)?;
 
         Ok(Import { module, items, alias })
-    }
-
-    fn parse_view(&mut self) -> Result<View, String> {
-        self.expect(Token::View)?;
-        let name = self.expect_identifier()?;
-
-        let mut props = Vec::new();
-        if self.current_token == Some(Token::LeftBrace) {
-            self.advance();
-            while self.current_token != Some(Token::RightBrace) {
-                props.push(self.parse_parameter()?);
-                if self.current_token == Some(Token::Comma) {
-                    self.advance();
-                }
-            }
-            self.expect(Token::RightBrace)?;
-        }
-
-        self.expect(Token::LeftBrace)?;
-
-        let mut cells = Vec::new();
-        let mut flows = Vec::new();
-        let mut style = None;
-        let mut render = None;
-        let mut event_handlers = Vec::new();
-
-        while self.current_token != Some(Token::RightBrace) {
-            match &self.current_token {
-                Some(Token::Cell) => {
-                    cells.push(self.parse_cell()?);
-                }
-                Some(Token::Flow) => {
-                    flows.push(self.parse_flow()?);
-                }
-                Some(Token::Style) => {
-                    style = Some(self.parse_style_block()?);
-                }
-                Some(Token::Render) => {
-                    render = Some(self.parse_render_block()?);
-                }
-                Some(Token::On) => {
-                    event_handlers.push(self.parse_event_handler()?);
-                }
-                _ => {
-                    return Err(format!("Unexpected token in view: {:?}", self.current_token));
-                }
-            }
-        }
-        self.expect(Token::RightBrace)?;
-
-        let render = render.ok_or("View must have a render block")?;
-
-        Ok(View {
-            name,
-            props,
-            cells,
-            flows,
-            style,
-            render,
-            event_handlers,
-        })
-    }
-
-    fn parse_cell(&mut self) -> Result<Cell, String> {
-        self.expect(Token::Cell)?;
-        let name = self.expect_identifier()?;
-
-        let mut type_annotation = None;
-        if self.current_token == Some(Token::Colon) {
-            self.advance();
-            type_annotation = Some(self.parse_type()?);
-        }
-
-        self.expect(Token::Assign)?;
-        let initial_value = self.parse_expression()?;
-        self.expect(Token::Semicolon)?;
-
-        Ok(Cell {
-            name,
-            initial_value,
-            type_annotation,
-            is_mutable: true, // All cells are mutable in GigliOptix
-        })
-    }
-
-    fn parse_flow(&mut self) -> Result<Flow, String> {
-        self.expect(Token::Flow)?;
-        let name = self.expect_identifier()?;
-        self.expect(Token::Assign)?;
-        let trigger = self.parse_flow_trigger()?;
-        self.expect(Token::LeftBrace)?;
-
-        let mut body = Vec::new();
-        while self.current_token != Some(Token::RightBrace) {
-            body.push(self.parse_statement()?);
-        }
-        self.expect(Token::RightBrace)?;
-
-        Ok(Flow { name, trigger, body })
-    }
-
-    fn parse_flow_trigger(&mut self) -> Result<FlowTrigger, String> {
-        match &self.current_token {
-            Some(Token::On) => {
-                self.advance();
-                let event = self.expect_identifier()?;
-                self.expect(Token::Colon)?;
-                let target = self.expect_identifier()?;
-                Ok(FlowTrigger::OnEvent { event, target })
-            }
-            Some(Token::Identifier(ident)) if ident == "interval" => {
-                self.advance();
-                self.expect(Token::LeftParen)?;
-                let ms = self.expect_number()? as u64;
-                self.expect(Token::RightParen)?;
-                Ok(FlowTrigger::Interval { ms })
-            }
-            Some(Token::Identifier(ident)) if ident == "onMount" => {
-                self.advance();
-                Ok(FlowTrigger::OnMount)
-            }
-            Some(Token::Identifier(ident)) if ident == "onUnmount" => {
-                self.advance();
-                Ok(FlowTrigger::OnUnmount)
-            }
-            _ => Err(format!("Invalid flow trigger: {:?}", self.current_token)),
-        }
-    }
-
-    fn parse_style_block(&mut self) -> Result<StyleBlock, String> {
-        self.expect(Token::Style)?;
-        self.expect(Token::Colon)?;
-
-        let mut properties = HashMap::new();
-        let mut media_queries = Vec::new();
-
-        while self.current_token != Some(Token::Semicolon) {
-            let property = self.expect_identifier()?;
-            self.expect(Token::Colon)?;
-            let value = self.parse_expression()?;
-            properties.insert(property, value);
-
-            if self.current_token == Some(Token::Comma) {
-                self.advance();
-            }
-        }
-        self.expect(Token::Semicolon)?;
-
-        Ok(StyleBlock { properties, media_queries })
-    }
-
-    fn parse_render_block(&mut self) -> Result<RenderBlock, String> {
-        self.expect(Token::Render)?;
-        self.expect(Token::Colon)?;
-
-        let mut elements = Vec::new();
-        while self.current_token != Some(Token::Semicolon) {
-            elements.push(self.parse_render_element()?);
-        }
-        self.expect(Token::Semicolon)?;
-
-        Ok(RenderBlock { elements })
-    }
-
-    fn parse_render_element(&mut self) -> Result<RenderElement, String> {
-        match &self.current_token {
-            Some(Token::StringLiteral(_)) | Some(Token::Identifier(_)) => {
-                let expr = self.parse_expression()?;
-                Ok(RenderElement::Text(expr))
-            }
-            Some(Token::If) => {
-                self.advance();
-                self.expect(Token::LeftParen)?;
-                let condition = self.parse_expression()?;
-                self.expect(Token::RightParen)?;
-                self.expect(Token::Then)?;
-
-                let mut then_elements = Vec::new();
-                while self.current_token != Some(Token::Else) && self.current_token != Some(Token::Semicolon) {
-                    then_elements.push(self.parse_render_element()?);
-                }
-
-                let mut else_elements = None;
-                if self.current_token == Some(Token::Else) {
-                    self.advance();
-                    let mut elements = Vec::new();
-                    while self.current_token != Some(Token::Semicolon) {
-                        elements.push(self.parse_render_element()?);
-                    }
-                    else_elements = Some(elements);
-                }
-
-                Ok(RenderElement::Conditional {
-                    condition,
-                    then: then_elements,
-                    else_: else_elements,
-                })
-            }
-            Some(Token::LeftBracket) => {
-                self.advance();
-                let tag = self.expect_identifier()?;
-                let mut attributes = HashMap::new();
-                let mut children = Vec::new();
-                let mut key = None;
-
-                while self.current_token != Some(Token::RightBracket) {
-                    if self.current_token == Some(Token::Slash) {
-                        self.advance();
-                        break;
-                    }
-
-                    let attr_name = self.expect_identifier()?;
-                    if self.current_token == Some(Token::Equal) {
-                        self.advance();
-                        let value = self.parse_expression()?;
-                        attributes.insert(attr_name, value);
-                    } else if attr_name == "key" {
-                        self.expect(Token::Equal)?;
-                        key = Some(self.parse_expression()?);
-                    }
-                }
-                self.expect(Token::RightBracket)?;
-
-                if self.current_token != Some(Token::Slash) {
-                    while self.current_token != Some(Token::LeftBracket) ||
-                          !matches!(self.peek(), Some(Token::Slash)) {
-                        children.push(self.parse_render_element()?);
-                    }
-                    self.expect(Token::LeftBracket)?;
-                    self.expect(Token::Slash)?;
-                    self.expect_identifier()?; // closing tag name
-                    self.expect(Token::RightBracket)?;
-                }
-
-                Ok(RenderElement::Element {
-                    tag,
-                    attributes,
-                    children,
-                    key,
-                })
-            }
-            _ => Err(format!("Unexpected token in render element: {:?}", self.current_token)),
-        }
-    }
-
-    fn parse_event_handler(&mut self) -> Result<EventHandler, String> {
-        self.expect(Token::On)?;
-        let event = self.expect_identifier()?;
-
-        let mut target = None;
-        if self.current_token == Some(Token::Colon) {
-            self.advance();
-            target = Some(self.expect_identifier()?);
-        }
-
-        self.expect(Token::Colon)?;
-
-        let mut action = Vec::new();
-        while self.current_token != Some(Token::Semicolon) {
-            action.push(self.parse_statement()?);
-        }
-        self.expect(Token::Semicolon)?;
-
-        Ok(EventHandler {
-            event,
-            target,
-            action,
-            modifiers: Vec::new(), // Default empty modifiers
-        })
     }
 
     fn parse_statement(&mut self) -> Result<Stmt, String> {

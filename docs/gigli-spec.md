@@ -1,82 +1,71 @@
-# Gigli Programming Language Specification (Draft)
+# Gigli Programming Language Specification (v0.2.0)
 
 ## Overview
-Gigli is a unified programming language for modern web development, blending the strengths of TypeScript, Rust, Svelte, Python, HTML, and CSS. It compiles to WebAssembly (WASM) for high performance, safety, and seamless browser integration.
+
+**Gigli** is a modern, unified programming language for building high-performance, reactive web applications. It combines logic, markup, and styling into a single, elegant component format. By compiling to WebAssembly (WASM), Gigli delivers exceptional speed and safety, aiming to drastically simplify the web development workflow.
+
+## Guiding Principles
+
+1.  **Unified & Simple:** A single `.gx` file defines a complete component. No more context-switching between HTML, CSS, and JavaScript.
+2.  **Ergonomic & Readable:** The syntax is designed to be intuitive and minimize boilerplate, making code a joy to write and maintain.
+3.  **Reactive by Default:** State management is a core language feature, not a library. The UI automatically reacts to state changes.
+4.  **Performant & Safe:** Leveraging a Rust-based compiler and WASM target, Gigli provides compile-time safety guarantees and near-native performance.
 
 ---
 
-## 1. Syntax & Semantics
+## 1. Core Syntax
 
-### 1.1. Variables & Types
+### 1.1. Variables and Constants
+
+Gigli is a statically-typed language with powerful type inference.
+
+-   `let`: Defines an immutable constant.
+-   `mut`: Defines a mutable variable.
+
 ```gigli
-let count: int = 0
-let name: string = "Gigli"
-let items: List<string> = ["a", "b", "c"]
-let data: Option<int> = None
+let PI: float = 3.14159
+let name = "Gigli" // Type `string` is inferred
+
+mut counter: int = 0
+counter = 10
 ```
 
 ### 1.2. Functions
+
+Functions are declared with the `fn` keyword. Type annotations are required for parameters and return values. `void` is used for functions that do not return a value.
+
 ```gigli
 fn add(a: int, b: int): int {
     return a + b
 }
 
-fn greet(name: string): void {
-    print("Hello, {name}!")
+// Lambdas use a concise syntax
+let multiply = |a, b| a * b
+```
+
+### 1.3. Control Flow
+
+Gigli supports standard control flow statements.
+
+```gigli
+if user.isAuthenticated {
+    print("Welcome!")
+} else {
+    print("Please log in.")
+}
+
+// `match` provides powerful pattern matching
+match response.statusCode {
+    200 => print("Success"),
+    404 => print("Not Found"),
+    _   => print("An error occurred"), // `_` is a wildcard
 }
 ```
 
-### 1.3. Ownership & Borrowing (Rust-inspired)
-```gigli
-fn process(data: &mut List<int>) {
-    data.push(42)
-}
-```
+### 1.4. Error Handling
 
-### 1.4. Async/Await (Concurrency)
-```gigli
-async fn fetch_data(url: string): Result<Response, Error> {
-    let response = await http.get(url)
-    return response
-}
-```
+Gigli uses `Result<T, E>` and `Option<T>` for robust error and nullability handling, eliminating null pointer errors.
 
-### 1.5. Reactivity (Svelte-like)
-```gigli
-let count: int = 0
-
-$: doubled = count * 2  // Reactive: updates when count changes
-```
-
-### 1.6. UI Components (HTML/CSS-like)
-```gigli
-component Counter {
-    let count: int = 0
-
-    fn increment() {
-        count += 1
-    }
-
-    <div class="counter">
-        <h1>Count: {count}</h1>
-        <button on:click={increment}>Increment</button>
-    </div>
-
-    style {
-        .counter {
-            color: blue;
-            font-size: 2em;
-        }
-    }
-}
-```
-
-### 1.7. Pythonic Features
-```gigli
-let squares = [x * x for x in range(10) if x % 2 == 0]
-```
-
-### 1.8. Error Handling
 ```gigli
 fn safe_divide(a: int, b: int): Result<int, string> {
     if b == 0 {
@@ -84,140 +73,252 @@ fn safe_divide(a: int, b: int): Result<int, string> {
     }
     return Ok(a / b)
 }
+
+let result = safe_divide(10, 2) // result is Ok(5)
 ```
 
 ---
 
-## 2. Type System
-- **Primitives**: int, float, bool, string, char
-- **Collections**: List<T>, Map<K, V>, Option<T>, Result<T, E>
-- **Interfaces & Generics**: Like TypeScript
-- **Union Types**: `let value: int | string`
-- **Type inference**: Optional, for concise code
+## 2. Component Model
 
----
+The component is the fundamental building block of a Gigli application. A component is defined in a `.gx` file and encapsulates its logic, markup, and styles.
 
-## 3. Memory Safety
-- **Ownership**: Each value has a single owner.
-- **Borrowing**: `&` (immutable), `&mut` (mutable) references.
-- **No GC**: Compile-time checks prevent leaks and data races.
+### 2.1. Component Structure
 
----
+A component consists of three optional sections in a single file:
+1.  **Logic (Script):** The code at the top of the file.
+2.  **Markup (View):** The HTML-like structure of the component.
+3.  **Style:** The component-scoped CSS.
 
-## 4. Concurrency
-- **Async/await**: For non-blocking I/O and UI.
-- **Thread-safe constructs**: Channels, mutexes, etc., inspired by Rust.
-
----
-
-## 5. UI & Styling
-- **Embedded HTML**: For declarative UI.
-- **Scoped CSS**: Via `style { ... }` blocks.
-- **Event bindings**: `on:event={handler}` syntax.
-
----
-
-## 6. Scripting
-- **Pythonic constructs**: List comprehensions, concise lambdas, dynamic typing (opt-in).
-
----
-
-## 7. Compilation & WASM
-- Compiles to WebAssembly for browser execution.
-- Optimized for size and speed.
-- Minimal runtime overhead.
-
----
-
-## 8. Error Handling & Tooling
-- **Clear error messages**: Inspired by TypeScript and Rust.
-- **Linting & formatting**: CLI support for code quality.
-- **IDE integration**: Language server for autocompletion, diagnostics.
-
----
-
-## 9. Example: Todo App
 ```gigli
-component TodoApp {
-    let todos: List<string> = []
-    let newTodo: string = ""
+// 1. Logic Section
+// ...
 
-    fn add_todo() {
-        if newTodo.trim() != "" {
-            todos.push(newTodo)
-            newTodo = ""
-        }
+// 2. Markup Section
+// ...
+
+// 3. Style Section
+style {
+    /* ... */
+}
+```
+
+### 2.2. State Management
+
+Reactivity is at the heart of Gigli.
+
+*   `state`: Declares a reactive state variable. Any modification to a `state` variable will automatically trigger a UI update.
+*   `let`: Declares a derived reactive value. It automatically re-calculates whenever the `state` variables it depends on change.
+
+```gigli
+component Counter {
+    // Reactive state: changing this re-renders the UI
+    state count: int = 0
+
+    // Derived state: re-calculates when `count` changes
+    let isEven = count % 2 == 0
+    let message = `The count is {count}`
+
+    fn increment() {
+        count += 1
     }
+}
+```
 
-    <main>
-        <h1>Todo List</h1>
-        <input bind:value={newTodo} placeholder="Add a todo..." />
-        <button on:click={add_todo}>Add</button>
-        <ul>
-            {for todo in todos}
-                <li>{todo}</li>
-            {/for}
-        </ul>
-    </main>
+### 2.3. Markup Syntax
 
-    style {
-        main { max-width: 400px; margin: auto; }
-        h1 { color: #2c3e50; }
-        input, button { font-size: 1em; }
+The markup section uses an HTML-like syntax for defining the component's structure.
+
+*   **Expressions:** Use `{...}` to embed dynamic values and expressions.
+*   **Event Handling:** Use `on:event={handler}`. Event modifiers are chained with colons, e.g., `on:submit:preventDefault={...}`.
+*   **Two-Way Data Binding:** Use `bind:attribute={state_variable}` to link a state variable to an input's attribute.
+*   **Control Flow:** Use special `{#...}` blocks for rendering logic.
+
+```gigli
+// Conditional Rendering
+{#if user.loggedIn}
+    <button on:click={logout}>Log Out</button>
+{:else}
+    <p>Please log in.</p>
+{/if}
+
+// List Rendering
+<ul>
+    {#for item in items}
+        <li>{item.name}</li>
+    {/for}
+</ul>
+```
+
+### 2.4. Styling
+
+The `style` block contains standard CSS. All styles are **scoped by default** to the component, meaning they won't leak out and affect other components.
+
+```gigli
+style {
+    /* This `h1` style only applies to h1 tags inside this component */
+    h1 {
+        color: #4A5568; /* A nice dark gray */
+        font-size: 2rem;
     }
 }
 ```
 
 ---
 
-## 10. Compiler Optimization Recommendations
-- Dead code elimination
-- Tree shaking
-- Inlining small functions
-- Minification of WASM output
-- Memory layout optimization
-- Compile reactivity to minimal update code
-- Scoped CSS compilation
+## 3. Type System
 
----
+*   **Primitives:** `int`, `float`, `bool`, `string`, `char`.
+*   **Data Structures:**
+    *   `struct`: For creating complex data types.
+    *   `enum`: For defining a type with a fixed set of variants.
+*   **Collections:** `List<T>`, `Map<K, V>`.
+*   **Special Types:** `Option<T>`, `Result<T, E>`.
+*   **Generics & Union Types:** Supported for building flexible and reusable code.
 
-## 11. CLI Enhancement Suggestions
-- Hot reload for development
-- Error overlays in browser
-- Bundle analysis and reporting
-- Component/template scaffolding
-- Integrated testing
-- Format/lint commands
+```gigli
+// A custom data structure
+struct User {
+    id: int,
+    name: string,
+    isActive: bool,
+}
 
----
-
-## 12. Quick Start Guide
-```bash
-# Install CLI
-npm install -g gigli
-
-# Create a new project
-gigli new my-app
-cd my-app
-
-gigli dev      # Development mode
-gigli build    # Production build
-gigli deploy   # Deploy
+// A type that can be one of several variants
+enum Status {
+    Loading,
+    Success(data: string),
+    Error(message: string),
+}
 ```
 
 ---
 
-## 13. Testing & Validation
-- Unit and UI tests
-- WASM validation in browser
-- CLI command checks
-- Cross-browser testing
+## 4. Memory Management & Concurrency
+
+*   **Ownership Model:** Inspired by Rust, Gigli uses an ownership system with compile-time checks to ensure memory safety without a garbage collector. For UI development, the framework manages most memory concerns automatically.
+*   **Borrowing:** Use `&` for immutable and `&mut` for mutable references to pass data without transferring ownership.
+*   **Concurrency:** `async`/`await` is built-in for handling asynchronous operations like API calls in a non-blocking way.
+
+```gigli
+async fn fetchUser(id: int): Result<User, string> {
+    let response = await http.get(`/api/users/{id}`)
+    if response.ok {
+        return Ok(response.json())
+    } else {
+        return Err("Failed to fetch user")
+    }
+}
+```
 
 ---
 
-## 14. Next Steps
-- Review and refine syntax/features
-- Implement and test sample programs
-- Optimize compiler for WASM
-- Enhance CLI for developer experience
-- Expand documentation
+## 5. Full Example: A Modern Todo App
+
+This example demonstrates how all the features of Gigli work together.
+
+**File: `src/components/TodoApp.gx`**
+```gigli
+// Import other components
+import { Button, Input } from "../shared/forms.gx"
+
+// Define our data structure
+struct TodoItem {
+    id: int,
+    text: string,
+    completed: bool,
+}
+
+component TodoApp {
+    // --- Logic & State ---
+    state todos: List<TodoItem> = []
+    state newTodoText: string = ""
+
+    // Derived reactive state
+    let remainingCount = todos.filter(|t| !t.completed).len()
+
+    fn addTodo() {
+        if newTodoText.trim() == "" { return }
+
+        let newTodo = TodoItem {
+            id: Date.now(), // Assume a built-in Date API
+            text: newTodoText,
+            completed: false,
+        }
+
+        todos.push(newTodo)
+        newTodoText = "" // Clear the input automatically
+    }
+
+    fn toggleTodo(id: int) {
+        for todo in &mut todos {
+            if todo.id == id {
+                todo.completed = !todo.completed
+                break
+            }
+        }
+    }
+
+    // --- Markup (View) ---
+    <div class="app-container">
+        <header>
+            <h1>Gigli Todos</h1>
+            <h2>{remainingCount} items remaining</h2>
+        </header>
+
+        <form class="add-todo-form" on:submit:preventDefault={addTodo}>
+            <Input
+                placeholder="What needs to be done?"
+                bind:value={newTodoText}
+            />
+            <Button type="submit">Add Todo</Button>
+        </form>
+
+        <ul class="todo-list">
+            {#for todo in todos}
+                <li
+                    class:completed={todo.completed}
+                    on:click={() => toggleTodo(todo.id)}
+                >
+                    {todo.text}
+                </li>
+            {/for}
+        </ul>
+    </div>
+
+    // --- Style (Scoped) ---
+    style {
+        .app-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .todo-list li {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .todo-list li:hover {
+            background-color: #f9f9f9;
+        }
+        .todo-list li.completed {
+            text-decoration: line-through;
+            color: #aaa;
+        }
+    }
+}
+```
+
+---
+
+## 6. Compiler & Tooling
+
+*   **Compiler:** The Rust-based `gigli` compiler performs advanced optimizations like dead-code elimination, tree-shaking, and minification to produce a highly compact and efficient WASM binary.
+*   **CLI:** The `gigli` command-line tool provides a seamless developer experience:
+    *   `gigli new <name>`: Scaffolds a new project.
+    *   `gigli dev`: Starts a hot-reloading development server.
+    *   `gigli build`: Creates an optimized production build.
+    *   `gigli check`: Type-checks the project without compiling.
+    *   `gigli fmt`: Formats all `.gx` files in the project.
+*   **LSP:** A dedicated Language Server Protocol implementation provides real-time diagnostics, autocompletion, and type information in modern code editors.

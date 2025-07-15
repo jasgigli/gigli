@@ -1,325 +1,147 @@
-# Gigli Programming Language
+# Gigli Programming Language (v0.2.0)
 
-> **The Future of Unified, Reactive, Ultra-Fast Software Development**
+**Gigli** is a modern, unified programming language for building high-performance, reactive web applications. It combines logic, markup, and styling into a single, elegant component format. By compiling to WebAssembly (WASM), Gigli delivers exceptional speed and safety, aiming to drastically simplify the web development workflow.
 
----
+## Guiding Principles
 
-## 🚀 Overview
-Gigli is a next-generation, unified programming language and toolchain for building ultra-fast, reactive, and maintainable software for web, native, and beyond. The Gigli CLI enables you to scaffold, develop, build, and deploy Gigli projects with ease.
-
----
-
-## ✨ Features
-- Unified language for frontend, backend, and system programming
-- Cross-platform CLI (Windows, macOS, Linux)
-- Project scaffolding and templates
-- Hot-reload development server
-- WASM and native builds
-- Built-in formatter, linter, and test runner
-- Zero-config, batteries-included
-
----
-
-## 📦 Installation
-
-Install the Gigli CLI globally via npm:
-
-```bash
-npm install -g gigli
-```
-
-Or build from source:
-
-```bash
-git clone https://github.com/jasgigli/gigli.git
-cd gigli
-cargo install --path src/cli
-```
+1.  **Unified & Simple:** A single `.gx` file defines a complete component. No more context-switching between HTML, CSS, and JavaScript.
+2.  **Ergonomic & Readable:** The syntax is designed to be intuitive and minimize boilerplate, making code a joy to write and maintain.
+3.  **Reactive by Default:** State management is a core language feature, not a library. The UI automatically reacts to state changes.
+4.  **Performant & Safe:** Leveraging a Rust-based compiler and WASM target, Gigli provides compile-time safety guarantees and near-native performance.
 
 ---
 
 ## ⚡ Quick Start
 
-Create a new Gigli project and start developing:
+1.  **Install the CLI:**
+    ```bash
+    # Coming soon to a package manager near you!
+    # For now, build from source:
+    git clone https://github.com/your-repo/gigli.git
+    cd gigli
+    cargo install --path src/cli
+    ```
 
-```bash
-gigli init my-app
-cd my-app
-gigli dev
-```
+2.  **Create a new project:**
+    ```bash
+    gigli new my-app
+    cd my-app
+    ```
 
-This will scaffold a new project, start the development server, and open your app in the browser.
-
----
-
-## 🛠️ CLI Usage
-
-| Command                        | Description                                 |
-|--------------------------------|---------------------------------------------|
-| `gigli init <name>`            | Create a new project                        |
-| `gigli dev`                    | Start development server with hot reload     |
-| `gigli build`                  | Build for production (WASM/native)           |
-| `gigli run <file>`             | Compile and run a Gigli file                 |
-| `gigli bundle`                 | Bundle for web deployment                    |
-| `gigli fmt <path>`             | Format code                                  |
-| `gigli lint <path>`            | Lint code                                    |
-| `gigli test <path>`            | Run tests                                    |
-| `gigli repl`                   | Start interactive REPL                       |
-
-For all options, run:
-
-```bash
-gigli --help
-```
+3.  **Start the dev server:**
+    ```bash
+    gigli dev
+    ```
+    This starts a hot-reloading development server and opens your new app in the browser.
 
 ---
 
-## 📁 Project Structure
+## 📖 Gigli by Example: A Modern Todo App
 
-A typical Gigli project looks like:
+This example demonstrates how all the features of Gigli work together in a single file.
 
-```
-my-app/
-├── src/                # Gigli source files (.gx)
-│   ├── App.gx          # Main app component
-│   └── ...
-├── public/             # Static assets
-├── dist/               # Build output
-├── gigli.toml          # Project configuration
-├── package.json        # (optional) JS dependencies
-└── README.md           # Project docs
-```
+**File: `src/components/TodoApp.gx`**
+```gigli
+// Import other components (example)
+// import { Button, Input } from "../shared/forms.gx"
 
----
+// Define our data structure
+struct TodoItem {
+    id: int,
+    text: string,
+    completed: bool,
+}
 
-## ⚙️ Configuration
+component TodoApp {
+    // --- Logic & State ---
+    state todos: List<TodoItem> = []
+    state newTodoText: string = ""
 
-Project settings are managed in `gigli.toml`:
+    // Derived reactive state: re-calculates automatically
+    let remainingCount = todos.filter(|t| !t.completed).len()
 
-```toml
-[project]
-name = "my-app"
-version = "0.1.0"
-description = "My first Gigli app"
+    fn addTodo() {
+        if newTodoText.trim() == "" { return }
 
-[build]
-target = "web"      # or "native"
-optimization = "release"
+        let newTodo = TodoItem {
+            id: Date.now(), // Assume a built-in Date API
+            text: newTodoText,
+            completed: false,
+        }
 
-[dev]
-port = 3000
-host = "localhost"
-auto_reload = true
-```
+        todos.push(newTodo)
+        newTodoText = "" // Clear the input automatically
+    }
 
----
+    fn toggleTodo(id: int) {
+        for todo in &mut todos {
+            if todo.id == id {
+                todo.completed = !todo.completed
+                break
+            }
+        }
+    }
 
-## 🧑‍💻 Advanced Usage
-- **Custom templates:** `gigli init my-app -t <template>`
-- **Build for native:** `gigli build --target native`
-- **Watch mode:** `gigli build --watch`
-- **Format & lint:** `gigli fmt src/ && gigli lint src/`
-- **Run tests:** `gigli test src/`
-- **REPL:** `gigli repl`
+    // --- Markup (View) ---
+    <div class="app-container">
+        <header>
+            <h1>Gigli Todos</h1>
+            <h2>{remainingCount} items remaining</h2>
+        </header>
 
----
+        <form class="add-todo-form" on:submit:preventDefault={addTodo}>
+            <input
+                placeholder="What needs to be done?"
+                bind:value={newTodoText}
+            />
+            <button type="submit">Add Todo</button>
+        </form>
 
-## 🔣 Modern Syntax Examples
+        <ul class="todo-list">
+            {#for todo in todos}
+                <li
+                    class:completed={todo.completed}
+                    on:click={() => toggleTodo(todo.id)}
+                >
+                    {todo.text}
+                </li>
+            {/for}
+        </ul>
+    </div>
 
-### Simple Counter App
-
-```gx
-view Counter {
-    cell count = 0
-    cell name = "World"
-
-    on click: count += 1
-    on doubleClick: count = 0
-
-    cell isEven = count % 2 === 0
-    cell message = `Hello, ${name}! Count: ${count}`
-
+    // --- Style (Scoped by default) ---
     style {
-        textAlign: "center",
-        padding: "20px",
-        backgroundColor: if isEven then "#e8f5e8" else "#fff3cd"
-    }
-
-    render {
-        <div class="counter">
-            <h1>{message}</h1>
-            <div class="count">{count}</div>
-            <button onClick={() => count += 1}>
-                Increment
-            </button>
-        </div>
-    }
-}
-```
-
-### Modern Web App with Classes
-
-```gx
-// Type definitions
-type User = {
-    id: number,
-    name: string,
-    email: string
-};
-
-// Service class
-class UserService {
-    private baseUrl: string;
-
-    constructor(baseUrl: string = "https://api.example.com") {
-        this.baseUrl = baseUrl;
-    }
-
-    async getUsers(): Promise<User[]> {
-        const response = await http.get(`${this.baseUrl}/users`);
-        return response.json();
-    }
-}
-
-// State management
-class UserStore {
-    cell users = [];
-    cell loading = false;
-    cell error = null;
-
-    constructor(private service: UserService) {}
-
-    async loadUsers() {
-        this.loading = true;
-        try {
-            this.users = await this.service.getUsers();
-        } catch (err) {
-            this.error = err.message;
-        } finally {
-            this.loading = false;
+        .app-container {
+            max-width: 500px;
+            margin: 2rem auto;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        .todo-list li {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .todo-list li:hover {
+            background-color: #f9f9f9;
+        }
+        .todo-list li.completed {
+            text-decoration: line-through;
+            color: #aaa;
         }
     }
 }
-
-// UI Component
-view UserList {
-    cell store = new UserStore(new UserService());
-
-    flow onMount {
-        store.loadUsers();
-    }
-
-    render {
-        <div class="user-list">
-            {store.loading && <div>Loading...</div>}
-            {store.error && <div class="error">Error: {store.error}</div>}
-            {store.users.map(user => (
-                <div key={user.id} class="user-item">
-                    <h3>{user.name}</h3>
-                    <p>{user.email}</p>
-                </div>
-            ))}
-        </div>
-    }
-}
 ```
 
 ---
 
-## 📦 Project Structure Example
+## 🛠️ Compiler & Tooling
 
-```
-my-app/
-├── src/
-│   ├── main.gx              # Entry point
-│   ├── components/          # UI components
-│   │   ├── Header.gx
-│   │   ├── Footer.gx
-│   │   └── MainContent.gx
-│   ├── services/           # Business logic
-│   │   └── ApiService.gx
-│   ├── types/              # Type definitions
-│   │   └── models.gx
-│   └── utils/              # Utility functions
-│       └── helpers.gx
-├── public/                 # Static assets
-├── dist/                   # Build output
-├── tests/                  # Test files
-├── gigli.config.json       # Project configuration
-└── package.json           # Dependencies
-```
-
----
-
-## 📈 Roadmap
-
-### ✅ Completed
-- [x] Core language syntax and AST
-- [x] Lexer and parser implementation
-- [x] Basic CLI interface
-- [x] WASM compilation backend
-- [x] Project templates
-
-### 🚧 In Progress
-- [ ] Type system implementation
-- [ ] Standard library modules
-- [ ] Development server with hot reload
-- [ ] Language Server Protocol (LSP)
-
-### 🔮 Planned
-- [ ] Visual debugger
-- [ ] Package registry
-- [ ] Full LLVM backend
-- [ ] Mobile compilation targets
-- [ ] IDE extensions
-
----
-
-## 🤝 Contributing
-
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-feature`)
-3. **Commit** your changes (`git commit -m 'Add amazing feature'`)
-4. **Push** to the branch (`git push origin feature/amazing-feature`)
-5. **Open** a Pull Request
-
-### Development Setup
-
-```bash
-# Clone and setup
-git clone https://github.com/jasgigli/gigli.git
-cd gigli
-
-# Install dependencies
-cargo build
-
-# Run tests
-cargo test
-
-# Format code
-cargo fmt
-
-# Lint code
-cargo clippy
-```
-
----
-
-## 📝 License
-
-MIT License (c) 2025 Gigli Authors
-
----
-
-## 💬 Community
-
-- **GitHub**: [github.com/jasgigli/gigli](https://github.com/jasgigli/gigli)
-- **Discord**: [discord.gg/gigli](https://discord.gg/gigli)
-- **Twitter**: [@gigli](https://twitter.com/gigli)
-- **Documentation**: [gigli.vercel.app](https://gigli.vercel.app)
-
----
-
-> *"Code that lives, flows, and heals."*
-
-**Ready to build the future of web development?** [Get started now →](https://gigli.vercel.app/getting-started)
+*   **Compiler:** The Rust-based `gigli` compiler performs advanced optimizations like dead-code elimination, tree-shaking, and minification to produce a highly compact and efficient WASM binary.
+*   **CLI:** The `gigli` command-line tool provides a seamless developer experience:
+    *   `gigli new <name>`: Scaffolds a new project.
+    *   `gigli dev`: Starts a hot-reloading development server.
+    *   `gigli build`: Creates an optimized production build.
+    *   `gigli check`: Type-checks the project without compiling.
+    *   `gigli fmt`: Formats all `.gx` files in the project.
+*   **LSP:** A dedicated Language Server Protocol implementation provides real-time diagnostics, autocompletion, and type information in modern code editors.
