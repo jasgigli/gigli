@@ -3,7 +3,7 @@ use clap::{Arg, Command, Subcommand};
 
 pub fn build_cli() -> Command {
     Command::new("gigli")
-        .version("0.1.0")
+        .version("0.2.0")
         .about("Gigli Programming Language Compiler")
         .subcommand_negates_reqs(true)
         .arg_required_else_help(true)

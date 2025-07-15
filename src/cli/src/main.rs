@@ -77,18 +77,22 @@ fn main() {
             println!("  Source maps: {}", source_map);
 
             // === 1. Parse source code ===
-            // let ast = parse_file(input); // This line is removed as per the edit hint.
+            let source = std::fs::read_to_string(input).unwrap();
+            let mut lexer = gigli_core::lexer::Lexer::new(&source);
+            let tokens = lexer.tokenize().unwrap();
+            let mut parser = gigli_core::parser::Parser::new(tokens);
+            let ast = parser.parse().unwrap();
 
             // === 2. Generate IR ===
-            // let ir = generate_ir(&ast); // This line is removed as per the edit hint.
+            let ir = gigli_core::ir::generator::generate_ir(&ast);
 
             // === 3. Emit WASM ===
-            // let wasm_path = "main.wasm";
-            // emit_wasm(&ir, wasm_path);
+            let wasm_path = "main.wasm";
+            gigli_codegen_wasm::emit_wasm(&ir, wasm_path);
 
             // === 4. Bundle for web ===
-            // bundle::bundle_for_web(wasm_path, output);
-            // println!("Bundle complete. Open {}/index.html in your browser.", output);
+            bundle::bundle_for_web(wasm_path, output);
+            println!("Bundle complete. Open {}/index.html in your browser.", output);
         }
         Some(("fmt", sub_m)) => {
             let input = sub_m.get_one::<String>("INPUT").unwrap();
@@ -230,22 +234,24 @@ fn start_dev_server(input: &str, host: &str, port: &str, open: bool) -> Result<(
     use std::path::Path;
 
     // === 1. Parse source code ===
-    // let ast = parse_file(input); // This line is removed as per the edit hint.
+    let source = std::fs::read_to_string(input)?;
+    let mut lexer = gigli_core::lexer::Lexer::new(&source);
+    let tokens = lexer.tokenize()?;
+    let mut parser = gigli_core::parser::Parser::new(tokens);
+    let ast = parser.parse()?;
 
     // === 2. Generate IR ===
-    // let ir = generate_ir(&ast); // This line is removed as per the edit hint.
+    let ir = gigli_core::ir::generator::generate_ir(&ast);
 
     // === 3. Emit WASM ===
-    // let out_dir = "dist";
-    // let wasm_path = Path::new(out_dir).join("main.wasm");
-    // fs::create_dir_all(out_dir)?;
-    // emit_wasm(&ir, wasm_path.to_str().unwrap());
-    // No need to wait or copy anymore
-    // bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
+    let out_dir = "dist";
+    let wasm_path = Path::new(out_dir).join("main.wasm");
+    fs::create_dir_all(out_dir)?;
+    gigli_codegen_wasm::emit_wasm(&ir, wasm_path.to_str().unwrap());
 
     // === 4. Bundle for web ===
     if let Err(e) = std::panic::catch_unwind(|| {
-        bundle::bundle_for_web(input, "dist");
+        bundle::bundle_for_web(wasm_path.to_str().unwrap(), out_dir);
     }) {
         eprintln!("\n[Error] Failed to bundle for web: {:?}", e);
         eprintln!("This is often caused by the WASM file being locked. Please close any programs using dist/main.wasm and try again.");
@@ -391,90 +397,10 @@ version = "0.1.0"
 "#, name);
     fs::write(project_dir.join("gigli.toml"), gigli_toml)?;
 
-    let app_gx_content = r#"// Define our data structure
-struct TodoItem {
-    id: int,
-    text: string,
-    completed: bool,
-}
-
-component TodoApp {
-    // --- Logic & State ---
-    state todos: List<TodoItem> = []
-    state newTodoText: string = ""
-
-    // Derived reactive state: re-calculates automatically
-    let remainingCount = todos.filter(|t| !t.completed).len()
-
-    fn addTodo() {
-        if newTodoText.trim() == "" { return }
-
-        let newTodo = TodoItem {
-            id: Date.now(), // Assume a built-in Date API
-            text: newTodoText,
-            completed: false,
-        }
-
-        todos.push(newTodo)
-        newTodoText = "" // Clear the input automatically
-    }
-
-    fn toggleTodo(id: int) {
-        for todo in &mut todos {
-            if todo.id == id {
-                todo.completed = !todo.completed
-                break
-            }
-        }
-    }
-
-    // --- Markup (View) ---
-    <div class="app-container">
-        <header>
-            <h1>Gigli Todos</h1>
-            <h2>{remainingCount} items remaining</h2>
-        </header>
-
-        <form class="add-todo-form" on:submit:preventDefault={addTodo}>
-            <input
-                placeholder="What needs to be done?"
-                bind:value={newTodoText}
-            />
-            <button type="submit">Add Todo</button>
-        </form>
-
-        <ul class="todo-list">
-            {#for todo in todos}
-                <li
-                    class:completed={todo.completed}
-                    on:click={() => toggleTodo(todo.id)}
-                >
-                    {todo.text}
-                </li>
-            {/for}
-        </ul>
-    </div>
-
-    // --- Style (Scoped by default) ---
-    style {
-        .app-container {
-            max-width: 500px;
-            margin: 2rem auto;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-        .todo-list li {
-            padding: 12px;
-            border-bottom: 1px solid #eee;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .todo-list li:hover {
-            background-color: #f9f9f9;
-        }
-        .todo-list li.completed {
-            text-decoration: line-through;
-            color: #aaa;
-        }
+    let app_gx_content = r#"
+component App {
+    fn main() {
+        <h1>Hello, world!</h1>
     }
 }
 "#;
